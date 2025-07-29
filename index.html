@@ -730,18 +730,18 @@
       const resultMessage = document.getElementById('resultMessage');
       if (percentage >= 80) {
         resultMessage.innerHTML = `
-          <div class="alert alert-success mt-3">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            ¡Felicidades! Has aprobado el test.
-          </div>
-        `;
+      <div class="alert alert-success mt-3">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        ¡Felicidades! Has aprobado el test.
+      </div>
+    `;
       } else {
         resultMessage.innerHTML = `
-          <div class="failed-message">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            No has alcanzado el puntaje mínimo para aprobar (80%). Sigue practicando.
-          </div>
-        `;
+      <div class="failed-message">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        No has alcanzado el puntaje mínimo para aprobar (80%). Sigue practicando.
+      </div>
+    `;
       }
 
       // Mostrar revisión detallada con imágenes
@@ -753,12 +753,14 @@
         const userOpt = userAnswers[i]?.selected;
         const correctOpt = q.CORRECTA;
         const options = [q.RESP1, q.RESP2, q.RESP3];
+        const unanswered = !userAnswers[i]?.selected;
 
         // Generar HTML para las opciones de respuesta
         let optionsHTML = options.map((opt, idx) => {
           const idx1 = idx + 1;
           let className = 'result-option';
           let icon = '';
+          let extraText = '';
 
           if (idx1 === correctOpt) {
             className += ' correct-answer';
@@ -770,38 +772,48 @@
             icon = '<i class="bi bi-circle me-2"></i>';
           }
 
-          return `<div class="${className}">${icon}${opt}</div>`;
+          return `<div class="${className}">${icon}${opt}${extraText}</div>`;
         }).join('');
 
         // Generar HTML para la imagen si existe
         let imageHTML = '';
         if (q.NRO && q.NRO !== "0" && q.NRO !== 0) {
           imageHTML = `
-            <div class="text-center my-3">
-              <img src="img/i${q.NRO}.png" 
-                   class="review-image"
-                   alt="Imagen de referencia para la pregunta"
-                   onerror="this.style.display='none'">
-            </div>
-          `;
+        <div class="text-center my-3">
+          <img src="img/i${q.NRO}.png" 
+               class="review-image"
+               alt="Imagen de referencia para la pregunta"
+               onerror="this.style.display='none'">
+        </div>
+      `;
         }
+
+        // Mensaje especial para preguntas no respondidas
+        const unansweredMessage = unanswered ? `
+      <div class="alert alert-warning mt-2 p-2">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>No seleccionaste ninguna respuesta para esta pregunta</strong>
+      </div>
+    ` : '';
 
         // Generar el HTML completo para la pregunta
         review.insertAdjacentHTML('beforeend', `
-          <div class="result-card mb-4">
-            <div class="result-question ${isCorrect ? 'border-success' : 'border-danger'} p-3">
-              <div class="question-header ${isCorrect ? 'text-success' : 'text-danger'} mb-2">
-                <i class="bi ${isCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-2"></i>
-                <strong>Pregunta ${i + 1}:</strong>
-              </div>
-              <div class="question-text mb-2">${q.TEXTO}</div>
-              ${imageHTML}
-              <div class="options-container mt-3">
-                ${optionsHTML}
-              </div>
-            </div>
+      <div class="result-card mb-4">
+        <div class="result-question ${isCorrect ? 'border-success' : 'border-danger'} p-3">
+          <div class="question-header ${unanswered ? 'text-warning' : (isCorrect ? 'text-success' : 'text-danger')} mb-2">
+            <i class="bi ${unanswered ? 'bi-question-circle-fill text-warning' : (isCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill')} me-2"></i>
+            <strong>Pregunta ${i + 1}:</strong>
+            ${unanswered ? '<span class="text-warning"> (Sin responder)</span>' : ''}
           </div>
-        `);
+          <div class="question-text mb-2">${q.TEXTO}</div>
+          ${imageHTML}
+          ${unansweredMessage}
+          <div class="options-container mt-3">
+            ${optionsHTML}
+          </div>
+        </div>
+      </div>
+    `);
       });
 
       localStorage.removeItem("testProgress");
