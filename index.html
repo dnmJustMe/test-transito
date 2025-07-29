@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Licencia de Conducir Cuba</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background: linear-gradient(to right, #007bff, #00c6ff);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .start-screen, .question-screen, .result-screen {
+      display: none;
+    }
+    .question-box {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+    }
+    .form-check-input:checked {
+      background-color: #198754;
+      border-color: #198754;
+    }
+    .answer.correct {
+      background-color: #d4edda;
+    }
+    .answer.incorrect {
+      background-color: #f8d7da;
+    }
+    .btn-primary, .btn-secondary, .btn-success {
+      font-weight: bold;
+    }
+    .form-check-label {
+      padding-left: 0.5rem;
+    }
+    #questionImage {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 1rem;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body class="text-center">
+  <div class="container py-5">
+    <div class="start-screen" id="startScreen">
+      <div class="question-box animate__animated animate__fadeInDown">
+        <h1 class="mb-4">Test para Licencia de Conducir en Cuba</h1>
+        <p class="mb-4">Selecciona la cantidad de preguntas:</p>
+        <div class="d-grid gap-3">
+          <button class="btn btn-primary" onclick="startTest(20)">20 Preguntas</button>
+          <button class="btn btn-primary" onclick="startTest(40)">40 Preguntas</button>
+          <button class="btn btn-primary" onclick="startTest(100)">100 Preguntas</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="question-screen" id="questionScreen">
+      <div class="question-box animate__animated animate__fadeIn">
+        <h4 id="questionText" class="mb-4"></h4>
+        <img id="questionImage" src="" alt="" style="display:none;" />
+        <div id="optionsContainer" class="text-start"></div>
+        <div class="d-flex justify-content-center mt-4">
+          <button class="btn btn-secondary me-3" onclick="prevQuestion()">Anterior</button>
+          <button class="btn btn-danger me-3" onclick="confirmFinish()">Finalizar</button>
+          <button class="btn btn-secondary me-3" onclick="nextQuestion()">Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-screen" id="resultScreen">
+      <div class="question-box animate__animated animate__fadeIn">
+        <h2>Resultados</h2>
+        <p id="scoreText"></p>
+        <div id="reviewContainer" class="mt-4 text-start"></div>
+        <button class="btn btn-success mt-4" onclick="location.reload()">Volver a empezar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let questions = [];
+
+    fetch('json.json')
+      .then(response => response.json())
+      .then(data => {
+        questions = data.RECORDS.RECORD.map(q => ({
+          ...q,
+          TEXTO: decodeHTMLEntities(q.TEXTO),
+          RESP1: decodeHTMLEntities(q.RESP1),
+          RESP2: decodeHTMLEntities(q.RESP2),
+          RESP3: decodeHTMLEntities(q.RESP3),
+        }));
+
+        const savedState = JSON.parse(localStorage.getItem('testState'));
+        if (savedState) {
+          selectedQuestions = savedState.selectedQuestions;
+          currentIndex = savedState.currentIndex;
+          score = savedState.score;
+          userAnswers.splice(0, userAnswers.length, ...savedState.userAnswers);
+          document.getElementById("startScreen").style.display = "none";
+          document.getElementById("questionScreen").style.display = "block";
+          showQuestion();
+        } else {
+          document.getElementById("startScreen").style.display = "block";
+        }
+      })
+      .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: 'Error cargando preguntas: ' + err }));
+
+    let selectedQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+    const userAnswers = [];
+
+    function startTest(count) {
+      selectedQuestions = shuffleArray(questions).slice(0, count);
+      currentIndex = 0;
+      score = 0;
+      userAnswers.length = 0;
+      saveState();
+
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("questionScreen").style.display = "block";
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = selectedQuestions[currentIndex];
+      document.getElementById("questionText").innerHTML = `<strong>Pregunta ${currentIndex + 1} de ${selectedQuestions.length}:</strong> ${q.TEXTO}`;
+      const options = [q.RESP1, q.RESP2, q.RESP3];
+
+      const imageElement = document.getElementById("questionImage");
+      if (q.NRO) {
+        imageElement.src = `img/i${q.NRO}.png`;
+        imageElement.style.display = "block";
+      } else {
+        imageElement.style.display = "none";
+      }
+
+      const container = document.getElementById("optionsContainer");
+      container.innerHTML = "";
+      options.forEach((opt, i) => {
+        const div = document.createElement("div");
+        div.classList.add("form-check", "mb-2");
+        div.innerHTML = `
+          <input class="form-check-input" type="radio" name="question" id="opt${i}" value="${i + 1}" ${userAnswers[currentIndex]?.selected === i + 1 ? 'checked' : ''} />
+          <label class="form-check-label" for="opt${i}">${opt}</label>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function nextQuestion() {
+      if (!saveAnswer()) return;
+      if (currentIndex < selectedQuestions.length - 1) {
+        currentIndex++;
+        showQuestion();
+        saveState();
+      } else {
+        showFinalModal();
+      }
+    }
+
+    function prevQuestion() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        showQuestion();
+        saveState();
+      }
+    }
+
+    function confirmFinish() {
+      Swal.fire({
+        icon: 'question',
+        title: '¿Quieres finalizar el test?',
+        text: 'Se perderán las preguntas no respondidas.',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, finalizar',
+        cancelButtonText: 'Cancelar'
+      }).then(result => {
+        if (result.isConfirmed) {
+          showFinalModal();
+        }
+      });
+    }
+
+    function saveAnswer() {
+      const selected = document.querySelector('input[name="question"]:checked');
+      if (!selected) {
+        Swal.fire({ icon: 'warning', title: 'Atención', text: 'Selecciona una opción antes de continuar' });
+        return false;
+      }
+
+      const userChoice = parseInt(selected.value);
+      const correct = selectedQuestions[currentIndex].CORRECTA;
+      if (!userAnswers[currentIndex]) {
+        if (userChoice === correct) score++;
+        userAnswers[currentIndex] = {
+          question: selectedQuestions[currentIndex],
+          selected: userChoice,
+          correct: correct
+        };
+      } else {
+        userAnswers[currentIndex].selected = userChoice;
+      }
+      return true;
+    }
+
+    function saveState() {
+      const state = {
+        selectedQuestions,
+        currentIndex,
+        score,
+        userAnswers
+      };
+      localStorage.setItem('testState', JSON.stringify(state));
+    }
+
+    function showFinalModal() {
+      localStorage.removeItem('testState');
+      const completado = userAnswers.length === selectedQuestions.length && userAnswers.every(ans => ans && ans.selected);
+
+      if (!completado) {
+        Swal.fire({
+          title: 'Test Finalizado',
+          html: 'No completaste todas las preguntas, por lo tanto no se calculará la puntuación.',
+          icon: 'info',
+          confirmButtonText: 'Aceptar'
+        }).then(() => location.reload());
+        return;
+      }
+
+      Swal.fire({
+        title: '¡Test Finalizado!',
+        html: `Tu puntuación es <strong>${score} / ${selectedQuestions.length}</strong>`,
+        icon: 'success',
+        showDenyButton: true,
+        confirmButtonText: 'Ver respuestas',
+        denyButtonText: 'Volver a empezar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showResult();
+        } else {
+          location.reload();
+        }
+      });
+    }
+
+    function showResult() {
+      document.getElementById("questionScreen").style.display = "none";
+      document.getElementById("resultScreen").style.display = "block";
+      document.getElementById("scoreText").innerHTML = `Tu nota: <strong>${score}/${selectedQuestions.length}</strong>`;
+
+      const review = document.getElementById("reviewContainer");
+      review.innerHTML = "";
+      userAnswers.forEach((item, i) => {
+        const q = item.question;
+        const div = document.createElement("div");
+        div.classList.add("mb-4", "p-3", "border", "rounded", "animate__animated", "animate__fadeInUp");
+
+        div.innerHTML = `<p><strong>${i + 1}. ${q.TEXTO}</strong></p>`;
+
+        [q.RESP1, q.RESP2, q.RESP3].forEach((resp, idx) => {
+          const isCorrect = (idx + 1) === item.correct;
+          const isSelected = (idx + 1) === item.selected;
+          const cssClass = isCorrect ? 'correct' : isSelected && !isCorrect ? 'incorrect' : '';
+
+          div.innerHTML += `
+            <div class="answer p-2 mb-1 rounded ${cssClass}">
+              ${resp} ${isCorrect ? '<strong>(Correcta)</strong>' : ''} ${isSelected && !isCorrect ? '<strong>(Tu respuesta)</strong>' : ''}
+            </div>
+          `;
+        });
+
+        review.appendChild(div);
+      });
+    }
+
+    function shuffleArray(array) {
+      return array.sort(() => Math.random() - 0.5);
+    }
+
+    function decodeHTMLEntities(str) {
+      const txt = document.createElement("textarea");
+      txt.innerHTML = str;
+      return txt.value;
+    }
+  </script>
+</body>
+</html>
