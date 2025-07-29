@@ -423,7 +423,7 @@
       });
     }
 
-    fetch('json.json')
+    fetch('json1.json')
       .then(r => r.json())
       .then(data => {
         questions = data.RECORDS.RECORD.map(q => ({
@@ -625,7 +625,7 @@
     }
 
     function finishTest() {
-      // Calcular score
+      // Calcular puntuación
       score = 0;
       selectedQuestions.forEach((q, i) => {
         if (userAnswers[i]?.selected == q.CORRECTA) score++;
@@ -634,34 +634,44 @@
       // Calcular porcentaje
       const percentage = Math.round((score / selectedQuestions.length) * 100);
 
-      // Evento de finalización de test
+      // Evento de Google Analytics
       gtag('event', 'complete_test', {
         'score': percentage,
         'test_length': selectedQuestions.length,
         'passed': percentage >= 80
       });
 
-      // Guardar resultado en historial
+      // Guardar en historial
       saveResultHistory(percentage, selectedQuestions.length);
 
-      // Mostrar resultados
+      // Mostrar pantalla de resultados
       goToScreen('resultScreen');
       window.scrollTo(0, 0);
 
-      // Actualizar elementos de la pantalla de resultados
+      // Actualizar elementos de la UI
       document.getElementById('finalScore').textContent = percentage;
       document.getElementById('scoreText').textContent = `Respondiste correctamente ${score} de ${selectedQuestions.length} preguntas`;
       document.getElementById('progressFill').style.width = `${percentage}%`;
 
-      // Mensaje según el resultado
+      // Mostrar mensaje según resultado
       const resultMessage = document.getElementById('resultMessage');
       if (percentage >= 80) {
-        resultMessage.innerHTML = '<div class="alert alert-success mt-3"><i class="bi bi-check-circle-fill me-2"></i>¡Felicidades! Has aprobado el test.</div>';
+        resultMessage.innerHTML = `
+      <div class="alert alert-success mt-3">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        ¡Felicidades! Has aprobado el test.
+      </div>
+    `;
       } else {
-        resultMessage.innerHTML = '<div class="failed-message"><i class="bi bi-exclamation-triangle-fill me-2"></i>No has alcanzado el puntaje mínimo para aprobar (80%). Sigue practicando.</div>';
+        resultMessage.innerHTML = `
+      <div class="failed-message">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        No has alcanzado el puntaje mínimo para aprobar (80%). Sigue practicando.
+      </div>
+    `;
       }
 
-      // Mostrar revisión detallada
+      // Mostrar revisión detallada con imágenes
       const review = document.getElementById('reviewContainer');
       review.innerHTML = '';
 
@@ -671,6 +681,7 @@
         const correctOpt = q.CORRECTA;
         const options = [q.RESP1, q.RESP2, q.RESP3];
 
+        // Generar HTML para las opciones de respuesta
         let optionsHTML = options.map((opt, idx) => {
           const idx1 = idx + 1;
           let className = 'result-option';
@@ -689,20 +700,58 @@
           return `<div class="${className}">${icon}${opt}</div>`;
         }).join('');
 
+        // Generar HTML para la imagen (versión robusta)
+        let imageHTML = '';
+        if (q.NRO && q.NRO !== "0" && q.NRO !== 0) {
+          const imgPath = `img/i${q.NRO}.png`;
+          imageHTML = `
+        <div class="text-center my-3 image-container">
+          <img src="${imgPath}" 
+               class="review-image img-fluid rounded border"
+               alt="Imagen de referencia para la pregunta"
+               onerror="this.style.display='none'"
+               loading="lazy">
+        </div>
+      `;
+        }
+
+        // Generar el HTML completo para la pregunta
         review.insertAdjacentHTML('beforeend', `
-          <div class="result-card">
-            <div class="result-question ${isCorrect ? 'border-success' : 'border-danger'}">
-              <p class="fw-bold ${isCorrect ? 'text-success' : 'text-danger'}">
-                <i class="bi ${isCorrect ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'} me-2"></i>
-                Pregunta ${i + 1}:
-              </p>
-              <p>${q.TEXTO}</p>
-              ${optionsHTML}
-            </div>
+      <div class="result-card mb-4">
+        <div class="result-question ${isCorrect ? 'border-success' : 'border-danger'} p-3">
+          <div class="question-header ${isCorrect ? 'text-success' : 'text-danger'} mb-2">
+            <i class="bi ${isCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-2"></i>
+            <strong>Pregunta ${i + 1}:</strong>
           </div>
-        `);
+          <div class="question-text mb-2">${q.TEXTO}</div>
+          ${imageHTML}
+          <div class="options-container mt-3">
+            ${optionsHTML}
+          </div>
+        </div>
+      </div>
+    `);
       });
 
+      // Añadir estilos dinámicos para las imágenes
+      const style = document.createElement('style');
+      style.textContent = `
+    .review-image {
+      max-width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border: 1px solid #dee2e6;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background-color: #f8f9fa;
+      padding: 5px;
+    }
+    .image-container {
+      position: relative;
+    }
+  `;
+      document.head.appendChild(style);
+
+      // Limpiar progreso
       localStorage.removeItem("testProgress");
     }
 
