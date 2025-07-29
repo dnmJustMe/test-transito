@@ -229,6 +229,24 @@
     .logo-header:hover {
       transform: scale(1.05);
     }
+
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding: 1rem;
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+
+    .footer a {
+      color: #004aad;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 
@@ -325,6 +343,13 @@
         </button>
       </div>
 
+      <!-- Footer con copyright -->
+      <div class="footer animate__animated animate__fadeIn">
+        <p>
+          Desarrollado con <i class="bi bi-laptop"></i> y <i class="bi bi-cup-hot"></i> por
+          <a href="#" onclick="showCredits()">DNMJustMe</a>
+        </p>
+      </div>
     </div>
   </div>
 
@@ -661,6 +686,23 @@
       userAnswers.length = 0;
       localStorage.removeItem("testProgress");
       goToScreen('homeScreen');
+    }
+
+    function showCredits() {
+      Swal.fire({
+        title: 'Créditos',
+        html: `
+      <div class="text-start">
+        <p><strong>Aplicación desarrollada por:</strong></p>
+        <p><i class="bi bi-person-circle me-2"></i> DNMJustMe</p>
+        <p><i class="bi bi-globe me-2"></i> <a href="https://dnmjustme.x10.mx" target="_blank">dnmjustme.x10.mx</a></p>
+        <hr>
+        <p class="small">© ${new Date().getFullYear()} - Todos los derechos reservados</p>
+      </div>
+    `,
+        confirmButtonText: 'Cerrar',
+        width: '600px'
+      });
     }
   </script>
 </body>
