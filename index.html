@@ -91,12 +91,41 @@
       background-color: #146c43;
     }
 
+    .question-img-container {
+      min-height: 150px;
+      margin: 1rem auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 0.5rem;
+      background-color: #f8f9fa;
+    }
+
     .question-img {
       max-width: 100%;
-      margin: 1rem auto;
-      display: none;
       border-radius: 0.5rem;
       border: 1px solid #ccc;
+      display: none;
+    }
+
+    /* Loader styles */
+    .loader {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     /* Resaltar fila seleccionada, sin radio visible */
@@ -283,6 +312,19 @@
     .footer a:hover {
       text-decoration: underline;
     }
+
+    /* Estilos para la imagen en resultados */
+    .review-image {
+      max-width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border: 1px solid #dee2e6;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background-color: #f8f9fa;
+      padding: 5px;
+      border-radius: 0.5rem;
+      margin: 0.5rem 0;
+    }
   </style>
 </head>
 
@@ -326,7 +368,9 @@
       <div id="questionScreen" class="screen">
         <div class="mb-3 p-3 rounded question-card shadow-sm">
           <h5 id="questionText" class="mb-3"></h5>
-          <img id="questionImage" class="question-img" alt="">
+          <div id="questionImageContainer" class="question-img-container">
+            <div class="loader"></div>
+          </div>
         </div>
         <div id="optionsContainer" class="mb-4"></div>
         <div class="d-flex justify-content-between">
@@ -491,26 +535,41 @@
       const q = selectedQuestions[currentIndex];
       document.getElementById("questionText").innerHTML = `<strong>Pregunta ${currentIndex + 1}:</strong> ${q.TEXTO}`;
 
-      const img = document.getElementById("questionImage");
-      if (q.NRO) {
-        img.src = `img/i${q.NRO}.png`;
-        img.style.display = 'block';
+      const imgContainer = document.getElementById("questionImageContainer");
 
-        // Evento de pregunta con imagen
-        gtag('event', 'view_question', {
-          'question_number': currentIndex + 1,
-          'has_image': true
-        });
+      // Mostrar preloader
+      imgContainer.innerHTML = '<div class="loader"></div>';
+      imgContainer.style.display = 'flex';
+
+      // Crear nueva imagen
+      const newImg = new Image();
+      newImg.className = 'question-img';
+
+      if (q.NRO && q.NRO !== "0" && q.NRO !== 0) {
+        newImg.src = `img/i${q.NRO}.png`;
+        newImg.alt = `Imagen pregunta ${currentIndex + 1}`;
+        newImg.onload = function () {
+          // Cuando la imagen se carga, reemplazar el preloader
+          imgContainer.innerHTML = '';
+          imgContainer.appendChild(newImg);
+          newImg.style.display = 'block';
+
+          // Evento de imagen cargada
+          gtag('event', 'image_loaded', {
+            'question_number': currentIndex + 1
+          });
+        };
+
+        newImg.onerror = function () {
+          // Si hay error, ocultar el contenedor
+          imgContainer.style.display = 'none';
+        };
       } else {
-        img.style.display = 'none';
-
-        // Evento de pregunta sin imagen
-        gtag('event', 'view_question', {
-          'question_number': currentIndex + 1,
-          'has_image': false
-        });
+        // Si no hay imagen, ocultar contenedor
+        imgContainer.style.display = 'none';
       }
 
+      // Mostrar opciones de respuesta
       const options = [q.RESP1, q.RESP2, q.RESP3];
       const container = document.getElementById("optionsContainer");
       container.innerHTML = "";
@@ -581,17 +640,31 @@
         return;
       }
 
-      if (currentIndex < selectedQuestions.length - 1) {
-        currentIndex++;
-        showQuestion();
-      }
+      // Ocultar imagen actual durante la transición
+      const imgContainer = document.getElementById("questionImageContainer");
+      imgContainer.style.display = 'none';
+
+      // Pequeño retraso para permitir la animación
+      setTimeout(() => {
+        if (currentIndex < selectedQuestions.length - 1) {
+          currentIndex++;
+          showQuestion();
+        }
+      }, 100);
     }
 
     function prevQuestion() {
-      if (currentIndex > 0) {
-        currentIndex--;
-        showQuestion();
-      }
+      // Ocultar imagen actual durante la transición
+      const imgContainer = document.getElementById("questionImageContainer");
+      imgContainer.style.display = 'none';
+
+      // Pequeño retraso para permitir la animación
+      setTimeout(() => {
+        if (currentIndex > 0) {
+          currentIndex--;
+          showQuestion();
+        }
+      }, 100);
     }
 
     function confirmFinish() {
@@ -653,22 +726,22 @@
       document.getElementById('scoreText').textContent = `Respondiste correctamente ${score} de ${selectedQuestions.length} preguntas`;
       document.getElementById('progressFill').style.width = `${percentage}%`;
 
-      // Mostrar mensaje según resultado
+      // Mensaje según el resultado
       const resultMessage = document.getElementById('resultMessage');
       if (percentage >= 80) {
         resultMessage.innerHTML = `
-      <div class="alert alert-success mt-3">
-        <i class="bi bi-check-circle-fill me-2"></i>
-        ¡Felicidades! Has aprobado el test.
-      </div>
-    `;
+          <div class="alert alert-success mt-3">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            ¡Felicidades! Has aprobado el test.
+          </div>
+        `;
       } else {
         resultMessage.innerHTML = `
-      <div class="failed-message">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        No has alcanzado el puntaje mínimo para aprobar (80%). Sigue practicando.
-      </div>
-    `;
+          <div class="failed-message">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            No has alcanzado el puntaje mínimo para aprobar (80%). Sigue practicando.
+          </div>
+        `;
       }
 
       // Mostrar revisión detallada con imágenes
@@ -700,58 +773,37 @@
           return `<div class="${className}">${icon}${opt}</div>`;
         }).join('');
 
-        // Generar HTML para la imagen (versión robusta)
+        // Generar HTML para la imagen si existe
         let imageHTML = '';
         if (q.NRO && q.NRO !== "0" && q.NRO !== 0) {
-          const imgPath = `img/i${q.NRO}.png`;
           imageHTML = `
-        <div class="text-center my-3 image-container">
-          <img src="${imgPath}" 
-               class="review-image img-fluid rounded border"
-               alt="Imagen de referencia para la pregunta"
-               onerror="this.style.display='none'"
-               loading="lazy">
-        </div>
-      `;
+            <div class="text-center my-3">
+              <img src="img/i${q.NRO}.png" 
+                   class="review-image"
+                   alt="Imagen de referencia para la pregunta"
+                   onerror="this.style.display='none'">
+            </div>
+          `;
         }
 
         // Generar el HTML completo para la pregunta
         review.insertAdjacentHTML('beforeend', `
-      <div class="result-card mb-4">
-        <div class="result-question ${isCorrect ? 'border-success' : 'border-danger'} p-3">
-          <div class="question-header ${isCorrect ? 'text-success' : 'text-danger'} mb-2">
-            <i class="bi ${isCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-2"></i>
-            <strong>Pregunta ${i + 1}:</strong>
+          <div class="result-card mb-4">
+            <div class="result-question ${isCorrect ? 'border-success' : 'border-danger'} p-3">
+              <div class="question-header ${isCorrect ? 'text-success' : 'text-danger'} mb-2">
+                <i class="bi ${isCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-2"></i>
+                <strong>Pregunta ${i + 1}:</strong>
+              </div>
+              <div class="question-text mb-2">${q.TEXTO}</div>
+              ${imageHTML}
+              <div class="options-container mt-3">
+                ${optionsHTML}
+              </div>
+            </div>
           </div>
-          <div class="question-text mb-2">${q.TEXTO}</div>
-          ${imageHTML}
-          <div class="options-container mt-3">
-            ${optionsHTML}
-          </div>
-        </div>
-      </div>
-    `);
+        `);
       });
 
-      // Añadir estilos dinámicos para las imágenes
-      const style = document.createElement('style');
-      style.textContent = `
-    .review-image {
-      max-width: 100%;
-      max-height: 200px;
-      object-fit: contain;
-      border: 1px solid #dee2e6;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      background-color: #f8f9fa;
-      padding: 5px;
-    }
-    .image-container {
-      position: relative;
-    }
-  `;
-      document.head.appendChild(style);
-
-      // Limpiar progreso
       localStorage.removeItem("testProgress");
     }
 
@@ -884,14 +936,14 @@
       Swal.fire({
         title: 'Créditos',
         html: `
-      <div class="text-start">
-        <p><strong>Aplicación desarrollada por:</strong></p>
-        <p><i class="bi bi-person-circle me-2"></i> DNMJustMe</p>
-        <p><i class="bi bi-globe me-2"></i> <a href="https://dnmjustme.x10.mx" target="_blank">dnmjustme.x10.mx</a></p>
-        <hr>
-        <p class="small">© ${new Date().getFullYear()} - Todos los derechos reservados</p>
-      </div>
-    `,
+          <div class="text-start">
+            <p><strong>Aplicación desarrollada por:</strong></p>
+            <p><i class="bi bi-person-circle me-2"></i> DNMJustMe</p>
+            <p><i class="bi bi-globe me-2"></i> <a href="https://dnmjustme.x10.mx" target="_blank">dnmjustme.x10.mx</a></p>
+            <hr>
+            <p class="small">© ${new Date().getFullYear()} - Todos los derechos reservados</p>
+          </div>
+        `,
         confirmButtonText: 'Cerrar',
         width: '600px'
       });
