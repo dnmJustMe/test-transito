@@ -47,7 +47,36 @@
 
     .btn-main {
       background-color: #198754;
-      border-color: #198754;
+      color: white;
+      font-weight: bold;
+    }
+
+    .btn-main:hover {
+      background-color: #146c43;
+    }
+
+    .question-img {
+      max-width: 100%;
+      margin: 1rem auto;
+      display: none;
+      border-radius: 0.5rem;
+      border: 1px solid #ccc;
+    }
+
+    /* Resaltar fila seleccionada, sin radio visible */
+    .form-check {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 0.75rem;
+      transition: background 0.3s;
+      cursor: pointer;
+      border: 1px solid #dee2e6;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      user-select: none;
+      position: relative;
     }
 
     .form-check:hover {
@@ -105,16 +134,106 @@
     .result-card {
       border-radius: 0.75rem;
       margin-bottom: 1rem;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
+      overflow: hidden;
+    }
+
+    .result-question {
+      padding: 1rem;
+      border: 1px solid #dee2e6;
+      border-radius: 0.75rem;
+    }
+
+    .result-option {
+      padding: 0.75rem;
+      margin: 0.25rem 0;
+      border-radius: 0.5rem;
+    }
+
+    .correct-answer {
+      background-color: #d1e7dd;
+      border-left: 4px solid #0f5132;
+    }
+
+    .incorrect-answer {
+      background-color: #f8d7da;
+      border-left: 4px solid #842029;
+    }
+
+    .score-circle {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #004aad;
+      border: 5px solid #00c6ff;
+    }
+
+    .progress-bar {
+      height: 10px;
+      border-radius: 5px;
+      background-color: #e9ecef;
+      margin: 1rem 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 5px;
+      background: linear-gradient(to right, #004aad, #00c6ff);
+    }
+
+    .legend {
+      background-color: #f8f9fa;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid #dee2e6;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      margin-right: 0.75rem;
+      border: 1px solid #dee2e6;
+    }
+
+    .failed-message {
+      background-color: white;
+      color: #dc3545;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      font-weight: bold;
+      margin-top: 1rem;
+      border: 1px solid #dc3545;
+    }
+
+    /* Estilo para el logo */
+    .logo-header {
+      max-height: 80px;
+      margin-bottom: 1.5rem;
+      transition: transform 0.3s;
+    }
+
+    .logo-header:hover {
+      transform: scale(1.05);
     }
   </style>
 </head>
 
 <body>
   <div class="app-container">
-
     <div class="app-box animate__animated animate__fadeIn">
 
       <!-- Pantalla de inicio -->
@@ -163,27 +282,50 @@
           </button>
         </div>
       </div>
+
+      <!-- Resultados -->
+      <div id="resultScreen" class="screen">
+        <div class="result-header text-center">
+          <div class="score-circle">
+            <span id="finalScore">0</span>%
+          </div>
+          <h4><i class="bi bi-award me-2"></i>Resultados del Test</h4>
+          <p id="scoreText" class="mb-0"></p>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div id="resultMessage"></div>
+        </div>
+
+        <div class="legend">
+          <h5><i class="bi bi-info-circle me-2"></i>Leyenda:</h5>
+          <div class="result-option incorrect-answer"><i class="bi bi-x-circle-fill text-danger me-2"></i>
+            Tu respuesta incorrecta
+          </div>
+          <div class="result-option correct-answer"><i class="bi bi-check-circle-fill text-success me-2"></i>
+            Respuesta correcta
+          </div>
+        </div>
+
+        <div id="reviewContainer" class="review-container"></div>
+
+        <div class="text-center mt-4">
+          <button class="btn btn-success" onclick="location.reload()">
+            <i class="bi bi-arrow-repeat me-1"></i>Volver a empezar
+          </button>
+        </div>
+      </div>
+
+      <!-- Historial -->
+      <div id="historyScreen" class="screen text-center">
+        <h4 class="mb-3"><i class="bi bi-clock-history me-2"></i>Historial de puntuaciones</h4>
+        <div id="historyContainer" class="text-start"></div>
+        <button class="btn btn-secondary mt-3" onclick="goToScreen('homeScreen')">
+          <i class="bi bi-arrow-left-circle me-1"></i>Volver
+        </button>
+      </div>
+
     </div>
-
-    <div id="reviewContainer" class="review-container"></div>
-
-    <div class="text-center mt-4">
-      <button class="btn btn-success" onclick="location.reload()">
-        <i class="bi bi-arrow-repeat me-1"></i>Volver a empezar
-      </button>
-    </div>
-  </div>
-
-  <!-- Historial -->
-  <div id="historyScreen" class="screen text-center">
-    <h4 class="mb-3"><i class="bi bi-clock-history me-2"></i>Historial de puntuaciones</h4>
-    <div id="historyContainer" class="text-start"></div>
-    <button class="btn btn-secondary mt-3" onclick="goToScreen('homeScreen')">
-      <i class="bi bi-arrow-left-circle me-1"></i>Volver
-    </button>
-  </div>
-
-  </div>
   </div>
 
   <script>
