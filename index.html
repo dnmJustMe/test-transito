@@ -1,49 +1,109 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Test Licencia de Conducir Cuba</title>
+  <title>Test Licencia Cuba</title>
+
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
-      background: linear-gradient(to right, #007bff, #00c6ff);
+      background: linear-gradient(to right, #004aad, #00c6ff);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .app-container {
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
+      align-items: center;
       justify-content: center;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2rem 1rem;
     }
-    .start-screen, .question-screen, .result-screen {
-      display: none;
-    }
-    .question-box {
+
+    .app-box {
       background: white;
       border-radius: 1rem;
       padding: 2rem;
-      box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 650px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     }
-    .form-check-input:checked {
+
+    .screen {
+      display: none;
+    }
+
+    .visible {
+      display: block;
+    }
+
+    .btn-main {
       background-color: #198754;
       border-color: #198754;
     }
-    .answer.correct {
-      background-color: #d4edda;
+
+    .form-check:hover {
+      background: #e2f0ff;
     }
+
+    .form-check input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Resaltar el fondo de la opción seleccionada */
+    .form-check input[type="radio"]:checked+span {
+      border-radius: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      display: inline-block;
+      font-weight: 600;
+    }
+
+    /* Opcional: resalta todo el label cuando está seleccionado */
+    .form-check.selected {
+      background-color: #a3cfbb;
+    }
+
+    .answer.correct {
+      background-color: #d1e7dd;
+      border-left: 4px solid #0f5132;
+    }
+
     .answer.incorrect {
       background-color: #f8d7da;
+      border-left: 4px solid #842029;
     }
-    .btn-primary, .btn-secondary, .btn-success {
-      font-weight: bold;
+
+    .icon {
+      font-size: 1.5rem;
+      color: #0d6efd;
     }
-    .form-check-label {
-      padding-left: 0.5rem;
+
+    .question-card {
+      border-left: 5px solid #0d6efd;
+      background-color: #f1f7ff;
     }
-    #questionImage {
-      max-width: 100%;
-      height: auto;
+
+    /* Nuevos estilos para la pantalla de resultados */
+    .result-header {
+      background: linear-gradient(to right, #004aad, #00c6ff);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .result-card {
+      border-radius: 0.75rem;
       margin-bottom: 1rem;
       display: block;
       margin-left: auto;
@@ -51,123 +111,198 @@
     }
   </style>
 </head>
-<body class="text-center">
-  <div class="container py-5">
-    <div class="start-screen" id="startScreen">
-      <div class="question-box animate__animated animate__fadeInDown">
-        <h1 class="mb-4">Test para Licencia de Conducir en Cuba</h1>
-        <p class="mb-4">Selecciona la cantidad de preguntas:</p>
+
+<body>
+  <div class="app-container">
+
+    <div class="app-box animate__animated animate__fadeIn">
+
+      <!-- Pantalla de inicio -->
+      <!-- Pantalla de inicio -->
+      <div id="homeScreen" class="screen visible text-center">
+        <img src="img/logo.png" alt="Logo de la aplicación" class="mb-3" style="max-height: 100px;">
+        <h2 class="mb-2">Test de Licencia en Cuba</h2>
+        <p class="mb-4">Simulador oficial de preguntas del examen teórico</p>
+        <button class="btn btn-main btn-lg w-100 mb-3" onclick="goToScreen('selectScreen')">
+          <i class="bi bi-play-circle me-2"></i>Comenzar
+        </button>
+        <button class="btn btn-primary w-100" onclick="showHistory()">
+          <i class="bi bi-clock-history me-2"></i>Ver historial
+        </button>
+      </div>
+
+      <!-- Selección de cantidad -->
+      <div id="selectScreen" class="screen text-center">
+        <h4 class="mb-4"><i class="bi bi-list-ol me-2"></i>Elige cuántas preguntas deseas:</h4>
         <div class="d-grid gap-3">
-          <button class="btn btn-primary" onclick="startTest(20)">20 Preguntas</button>
-          <button class="btn btn-primary" onclick="startTest(40)">40 Preguntas</button>
-          <button class="btn btn-primary" onclick="startTest(100)">100 Preguntas</button>
+          <button class="btn btn-outline-primary" onclick="startTest(20)">20 Preguntas</button>
+          <button class="btn btn-outline-primary" onclick="startTest(40)">40 Preguntas</button>
+          <button class="btn btn-outline-primary" onclick="startTest(100)">100 Preguntas</button>
+        </div>
+        <button class="btn btn-secondary mt-4" onclick="goToScreen('homeScreen')">
+          <i class="bi bi-arrow-left-circle me-1"></i>Volver
+        </button>
+      </div>
+
+      <!-- Preguntas -->
+      <div id="questionScreen" class="screen">
+        <div class="mb-3 p-3 rounded question-card shadow-sm">
+          <h5 id="questionText" class="mb-3"></h5>
+          <img id="questionImage" class="question-img" alt="">
+        </div>
+        <div id="optionsContainer" class="mb-4"></div>
+        <div class="d-flex justify-content-between">
+          <button class="btn btn-outline-secondary" onclick="prevQuestion()">
+            <i class="bi bi-chevron-left"></i> Anterior
+          </button>
+          <button id="finishButton" class="btn btn-danger" onclick="confirmFinish()">
+            <i class="bi bi-flag-fill"></i> Finalizar
+          </button>
+          <button id="nextButton" class="btn btn-outline-secondary" onclick="nextQuestion()">
+            Siguiente <i class="bi bi-chevron-right"></i>
+          </button>
         </div>
       </div>
     </div>
 
-    <div class="question-screen" id="questionScreen">
-      <div class="question-box animate__animated animate__fadeIn">
-        <h4 id="questionText" class="mb-4"></h4>
-        <img id="questionImage" src="" alt="" style="display:none;" />
-        <div id="optionsContainer" class="text-start"></div>
-        <div class="d-flex justify-content-center mt-4">
-          <button class="btn btn-secondary me-3" onclick="prevQuestion()">Anterior</button>
-          <button class="btn btn-danger me-3" onclick="confirmFinish()">Finalizar</button>
-          <button class="btn btn-secondary me-3" onclick="nextQuestion()">Siguiente</button>
-        </div>
-      </div>
-    </div>
+    <div id="reviewContainer" class="review-container"></div>
 
-    <div class="result-screen" id="resultScreen">
-      <div class="question-box animate__animated animate__fadeIn">
-        <h2>Resultados</h2>
-        <p id="scoreText"></p>
-        <div id="reviewContainer" class="mt-4 text-start"></div>
-        <button class="btn btn-success mt-4" onclick="location.reload()">Volver a empezar</button>
-      </div>
+    <div class="text-center mt-4">
+      <button class="btn btn-success" onclick="location.reload()">
+        <i class="bi bi-arrow-repeat me-1"></i>Volver a empezar
+      </button>
     </div>
+  </div>
+
+  <!-- Historial -->
+  <div id="historyScreen" class="screen text-center">
+    <h4 class="mb-3"><i class="bi bi-clock-history me-2"></i>Historial de puntuaciones</h4>
+    <div id="historyContainer" class="text-start"></div>
+    <button class="btn btn-secondary mt-3" onclick="goToScreen('homeScreen')">
+      <i class="bi bi-arrow-left-circle me-1"></i>Volver
+    </button>
+  </div>
+
+  </div>
   </div>
 
   <script>
     let questions = [];
-
-    fetch('json.json')
-      .then(response => response.json())
-      .then(data => {
-        questions = data.RECORDS.RECORD.map(q => ({
-          ...q,
-          TEXTO: decodeHTMLEntities(q.TEXTO),
-          RESP1: decodeHTMLEntities(q.RESP1),
-          RESP2: decodeHTMLEntities(q.RESP2),
-          RESP3: decodeHTMLEntities(q.RESP3),
-        }));
-
-        const savedState = JSON.parse(localStorage.getItem('testState'));
-        if (savedState) {
-          selectedQuestions = savedState.selectedQuestions;
-          currentIndex = savedState.currentIndex;
-          score = savedState.score;
-          userAnswers.splice(0, userAnswers.length, ...savedState.userAnswers);
-          document.getElementById("startScreen").style.display = "none";
-          document.getElementById("questionScreen").style.display = "block";
-          showQuestion();
-        } else {
-          document.getElementById("startScreen").style.display = "block";
-        }
-      })
-      .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: 'Error cargando preguntas: ' + err }));
-
     let selectedQuestions = [];
     let currentIndex = 0;
     let score = 0;
     const userAnswers = [];
+
+    fetch('json.json')
+      .then(r => r.json())
+      .then(data => {
+        questions = data.RECORDS.RECORD.map(q => ({
+          ...q,
+          TEXTO: decodeHTML(q.TEXTO),
+          RESP1: decodeHTML(q.RESP1),
+          RESP2: decodeHTML(q.RESP2),
+          RESP3: decodeHTML(q.RESP3)
+        }));
+        if (!loadProgress()) {
+          goToScreen('homeScreen');
+        }
+      })
+      .catch(err => Swal.fire('Error', 'No se pudieron cargar las preguntas', 'error'));
+
+    function decodeHTML(str) {
+      const txt = document.createElement("textarea");
+      txt.innerHTML = str;
+      return txt.value;
+    }
+
+    function goToScreen(id) {
+      document.querySelectorAll('.screen').forEach(el => el.classList.remove('visible'));
+      document.getElementById(id).classList.add('visible');
+    }
 
     function startTest(count) {
       selectedQuestions = shuffleArray(questions).slice(0, count);
       currentIndex = 0;
       score = 0;
       userAnswers.length = 0;
-      saveState();
-
-      document.getElementById("startScreen").style.display = "none";
-      document.getElementById("questionScreen").style.display = "block";
+      localStorage.removeItem("testProgress");
+      goToScreen('questionScreen');
       showQuestion();
+      saveProgress();
+      updateNavigationButtons();
     }
 
     function showQuestion() {
       const q = selectedQuestions[currentIndex];
-      document.getElementById("questionText").innerHTML = `<strong>Pregunta ${currentIndex + 1} de ${selectedQuestions.length}:</strong> ${q.TEXTO}`;
-      const options = [q.RESP1, q.RESP2, q.RESP3];
+      document.getElementById("questionText").innerHTML = `<strong>Pregunta ${currentIndex + 1}:</strong> ${q.TEXTO}`;
 
-      const imageElement = document.getElementById("questionImage");
+      const img = document.getElementById("questionImage");
       if (q.NRO) {
-        imageElement.src = `img/i${q.NRO}.png`;
-        imageElement.style.display = "block";
+        img.src = `img/i${q.NRO}.png`;
+        img.style.display = 'block';
       } else {
-        imageElement.style.display = "none";
+        img.style.display = 'none';
       }
 
+      const options = [q.RESP1, q.RESP2, q.RESP3];
       const container = document.getElementById("optionsContainer");
       container.innerHTML = "";
+
       options.forEach((opt, i) => {
-        const div = document.createElement("div");
-        div.classList.add("form-check", "mb-2");
-        div.innerHTML = `
-          <input class="form-check-input" type="radio" name="question" id="opt${i}" value="${i + 1}" ${userAnswers[currentIndex]?.selected === i + 1 ? 'checked' : ''} />
-          <label class="form-check-label" for="opt${i}">${opt}</label>
+        const checked = userAnswers[currentIndex]?.selected === i + 1 ? 'checked' : '';
+        const selectedClass = userAnswers[currentIndex]?.selected === i + 1 ? 'selected' : '';
+        const optionHTML = `
+          <label class="form-check ${selectedClass}" for="opt${i}">
+            <input class="form-check-input" type="radio" name="opt" id="opt${i}" value="${i + 1}" ${checked} onchange="selectAnswer(${i + 1})" />
+            <span>${opt}</span>
+          </label>
         `;
-        container.appendChild(div);
+        container.insertAdjacentHTML('beforeend', optionHTML);
+      });
+
+      updateNavigationButtons();
+    }
+
+    function updateNavigationButtons() {
+      const finishButton = document.getElementById('finishButton');
+      const nextButton = document.getElementById('nextButton');
+
+      if (currentIndex === selectedQuestions.length - 1) {
+        finishButton.style.display = 'none';
+        nextButton.innerHTML = '<i class="bi bi-check-circle me-1"></i> Terminar Test';
+        nextButton.classList.remove('btn-outline-secondary');
+        nextButton.classList.add('btn-success');
+        nextButton.setAttribute('onclick', 'confirmFinish()');
+      } else {
+        finishButton.style.display = 'block';
+        nextButton.innerHTML = 'Siguiente <i class="bi bi-chevron-right"></i>';
+        nextButton.classList.remove('btn-success');
+        nextButton.classList.add('btn-outline-secondary');
+        nextButton.setAttribute('onclick', 'nextQuestion()');
+      }
+    }
+
+    function selectAnswer(num) {
+      userAnswers[currentIndex] = { selected: num };
+      saveProgress();
+      document.querySelectorAll('#optionsContainer .form-check').forEach((el, i) => {
+        el.classList.toggle('selected', userAnswers[currentIndex].selected === i + 1);
       });
     }
 
     function nextQuestion() {
-      if (!saveAnswer()) return;
+      if (!userAnswers[currentIndex]?.selected) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Selecciona una respuesta',
+          text: 'Por favor, selecciona una opción antes de continuar.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
       if (currentIndex < selectedQuestions.length - 1) {
         currentIndex++;
         showQuestion();
-        saveState();
-      } else {
-        showFinalModal();
       }
     }
 
@@ -175,126 +310,217 @@
       if (currentIndex > 0) {
         currentIndex--;
         showQuestion();
-        saveState();
       }
     }
 
     function confirmFinish() {
-      Swal.fire({
-        icon: 'question',
-        title: '¿Quieres finalizar el test?',
-        text: 'Se perderán las preguntas no respondidas.',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, finalizar',
-        cancelButtonText: 'Cancelar'
-      }).then(result => {
-        if (result.isConfirmed) {
-          showFinalModal();
-        }
-      });
-    }
+      const unanswered = selectedQuestions.some((_, i) => !userAnswers[i]?.selected);
 
-    function saveAnswer() {
-      const selected = document.querySelector('input[name="question"]:checked');
-      if (!selected) {
-        Swal.fire({ icon: 'warning', title: 'Atención', text: 'Selecciona una opción antes de continuar' });
-        return false;
-      }
-
-      const userChoice = parseInt(selected.value);
-      const correct = selectedQuestions[currentIndex].CORRECTA;
-      if (!userAnswers[currentIndex]) {
-        if (userChoice === correct) score++;
-        userAnswers[currentIndex] = {
-          question: selectedQuestions[currentIndex],
-          selected: userChoice,
-          correct: correct
-        };
-      } else {
-        userAnswers[currentIndex].selected = userChoice;
-      }
-      return true;
-    }
-
-    function saveState() {
-      const state = {
-        selectedQuestions,
-        currentIndex,
-        score,
-        userAnswers
-      };
-      localStorage.setItem('testState', JSON.stringify(state));
-    }
-
-    function showFinalModal() {
-      localStorage.removeItem('testState');
-      const completado = userAnswers.length === selectedQuestions.length && userAnswers.every(ans => ans && ans.selected);
-
-      if (!completado) {
+      if (unanswered) {
         Swal.fire({
-          title: 'Test Finalizado',
-          html: 'No completaste todas las preguntas, por lo tanto no se calculará la puntuación.',
-          icon: 'info',
-          confirmButtonText: 'Aceptar'
-        }).then(() => location.reload());
-        return;
+          title: '¿Estás seguro?',
+          text: 'Tienes preguntas sin responder. ¿Deseas terminar el test ahora?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Sí, terminar',
+          cancelButtonText: 'No, seguir'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            finishTest();
+          }
+        });
+      } else {
+        finishTest();
       }
-
-      Swal.fire({
-        title: '¡Test Finalizado!',
-        html: `Tu puntuación es <strong>${score} / ${selectedQuestions.length}</strong>`,
-        icon: 'success',
-        showDenyButton: true,
-        confirmButtonText: 'Ver respuestas',
-        denyButtonText: 'Volver a empezar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          showResult();
-        } else {
-          location.reload();
-        }
-      });
     }
 
-    function showResult() {
-      document.getElementById("questionScreen").style.display = "none";
-      document.getElementById("resultScreen").style.display = "block";
-      document.getElementById("scoreText").innerHTML = `Tu nota: <strong>${score}/${selectedQuestions.length}</strong>`;
-
-      const review = document.getElementById("reviewContainer");
-      review.innerHTML = "";
-      userAnswers.forEach((item, i) => {
-        const q = item.question;
-        const div = document.createElement("div");
-        div.classList.add("mb-4", "p-3", "border", "rounded", "animate__animated", "animate__fadeInUp");
-
-        div.innerHTML = `<p><strong>${i + 1}. ${q.TEXTO}</strong></p>`;
-
-        [q.RESP1, q.RESP2, q.RESP3].forEach((resp, idx) => {
-          const isCorrect = (idx + 1) === item.correct;
-          const isSelected = (idx + 1) === item.selected;
-          const cssClass = isCorrect ? 'correct' : isSelected && !isCorrect ? 'incorrect' : '';
-
-          div.innerHTML += `
-            <div class="answer p-2 mb-1 rounded ${cssClass}">
-              ${resp} ${isCorrect ? '<strong>(Correcta)</strong>' : ''} ${isSelected && !isCorrect ? '<strong>(Tu respuesta)</strong>' : ''}
-            </div>
-          `;
-        });
-
-        review.appendChild(div);
+    function finishTest() {
+      // Calcular score
+      score = 0;
+      selectedQuestions.forEach((q, i) => {
+        if (userAnswers[i]?.selected == q.CORRECTA) score++;
       });
+
+      // Calcular porcentaje
+      const percentage = Math.round((score / selectedQuestions.length) * 100);
+
+      // Guardar resultado en historial
+      saveResultHistory(percentage, selectedQuestions.length);
+
+      // Mostrar resultados
+      goToScreen('resultScreen');
+
+      // Actualizar elementos de la pantalla de resultados
+      document.getElementById('finalScore').textContent = percentage;
+      document.getElementById('scoreText').textContent = `Respondiste correctamente ${score} de ${selectedQuestions.length} preguntas`;
+      document.getElementById('progressFill').style.width = `${percentage}%`;
+
+      // Mensaje según el resultado
+      const resultMessage = document.getElementById('resultMessage');
+      if (percentage >= 80) {
+        resultMessage.innerHTML = '<div class="alert alert-success mt-3"><i class="bi bi-check-circle-fill me-2"></i>¡Felicidades! Has aprobado el test.</div>';
+      } else {
+        resultMessage.innerHTML = '<div class="failed-message"><i class="bi bi-exclamation-triangle-fill me-2"></i>No has alcanzado el puntaje mínimo para aprobar (80%). Sigue practicando.</div>';
+      }
+
+      // Mostrar revisión detallada
+      const review = document.getElementById('reviewContainer');
+      review.innerHTML = '';
+
+      selectedQuestions.forEach((q, i) => {
+        const isCorrect = userAnswers[i]?.selected == q.CORRECTA;
+        const userOpt = userAnswers[i]?.selected;
+        const correctOpt = q.CORRECTA;
+        const options = [q.RESP1, q.RESP2, q.RESP3];
+
+        let optionsHTML = options.map((opt, idx) => {
+          const idx1 = idx + 1;
+          let className = 'result-option';
+          let icon = '';
+
+          if (idx1 === correctOpt) {
+            className += ' correct-answer';
+            icon = '<i class="bi bi-check-circle-fill text-success me-2"></i>';
+          } else if (idx1 === userOpt && idx1 !== correctOpt) {
+            className += ' incorrect-answer';
+            icon = '<i class="bi bi-x-circle-fill text-danger me-2"></i>';
+          } else {
+            icon = '<i class="bi bi-circle me-2"></i>';
+          }
+
+          return `<div class="${className}">${icon}${opt}</div>`;
+        }).join('');
+
+        review.insertAdjacentHTML('beforeend', `
+          <div class="result-card">
+            <div class="result-question ${isCorrect ? 'border-success' : 'border-danger'}">
+              <p class="fw-bold ${isCorrect ? 'text-success' : 'text-danger'}">
+                <i class="bi ${isCorrect ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'} me-2"></i>
+                Pregunta ${i + 1}:
+              </p>
+              <p>${q.TEXTO}</p>
+              ${optionsHTML}
+            </div>
+          </div>
+        `);
+      });
+
+      localStorage.removeItem("testProgress");
     }
 
     function shuffleArray(array) {
-      return array.sort(() => Math.random() - 0.5);
+      const arr = array.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     }
 
-    function decodeHTMLEntities(str) {
-      const txt = document.createElement("textarea");
-      txt.innerHTML = str;
-      return txt.value;
+    function saveProgress() {
+      const progress = {
+        selectedQuestions,
+        currentIndex,
+        userAnswers
+      };
+      try {
+        localStorage.setItem("testProgress", JSON.stringify(progress));
+      } catch (e) {
+        console.warn("No se pudo guardar el progreso:", e);
+      }
+    }
+
+    function loadProgress() {
+      const saved = localStorage.getItem("testProgress");
+      if (!saved) return false;
+
+      try {
+        const progress = JSON.parse(saved);
+
+        if (!progress.selectedQuestions || !progress.userAnswers) return false;
+
+        selectedQuestions = progress.selectedQuestions;
+        currentIndex = progress.currentIndex || 0;
+        for (let i = 0; i < progress.userAnswers.length; i++) {
+          userAnswers[i] = progress.userAnswers[i];
+        }
+
+        goToScreen('questionScreen');
+        showQuestion();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function saveResultHistory(score, total) {
+      const history = JSON.parse(localStorage.getItem("testHistory") || "[]");
+      const now = new Date().toISOString();
+      const category = `${total} preguntas`;
+
+      history.push({ score, total, category, date: now });
+
+      // Agrupar por categoría y ordenar internamente por score y fecha
+      const grouped = history.reduce((acc, item) => {
+        acc[item.category] = acc[item.category] || [];
+        acc[item.category].push(item);
+        return acc;
+      }, {});
+
+      // Recortar cada grupo a máximo 10
+      for (const cat in grouped) {
+        grouped[cat].sort((a, b) => b.score - a.score || new Date(b.date) - new Date(a.date));
+        grouped[cat] = grouped[cat].slice(0, 10);
+      }
+
+      // Unificar todos los grupos en un solo array
+      const merged = Object.values(grouped).flat();
+      localStorage.setItem("testHistory", JSON.stringify(merged));
+    }
+
+    function showHistory() {
+      const history = JSON.parse(localStorage.getItem("testHistory") || "[]");
+      const container = document.getElementById("historyContainer");
+
+      if (history.length === 0) {
+        container.innerHTML = "<p>No hay puntuaciones registradas aún.</p>";
+      } else {
+        // Agrupar por categoría
+        const grouped = history.reduce((acc, item) => {
+          acc[item.category] = acc[item.category] || [];
+          acc[item.category].push(item);
+          return acc;
+        }, {});
+
+        let html = "";
+        for (const category in grouped) {
+          html += `<h5>${category}</h5><ul class="list-group mb-3">`;
+          grouped[category].forEach(item => {
+            const date = new Date(item.date);
+            html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>${item.score}% (${item.score >= 80 ? '<span class="text-success">✅ Aprobado</span>' : '<span class="text-danger">❌ Reprobado</span>'})</span>
+              <small class="text-muted">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</small>
+            </li>`;
+          });
+          html += "</ul>";
+        }
+
+        container.innerHTML = html;
+      }
+      goToScreen('historyScreen');
+    }
+
+    function resetTest() {
+      selectedQuestions = [];
+      currentIndex = 0;
+      score = 0;
+      userAnswers.length = 0;
+      localStorage.removeItem("testProgress");
+      goToScreen('homeScreen');
     }
   </script>
 </body>
+
 </html>
