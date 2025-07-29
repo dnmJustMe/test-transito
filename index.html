@@ -9,7 +9,11 @@
     function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
 
-    gtag('config', 'G-L6CJ3M5QMC');
+    // Configuración principal
+    gtag('config', 'G-L6CJ3M5QMC', {
+      'page_title': 'Inicio',
+      'page_path': '/'
+    });
   </script>
 
   <meta charset="UTF-8" />
@@ -287,15 +291,16 @@
     <div class="app-box animate__animated animate__fadeIn">
 
       <!-- Pantalla de inicio -->
-      <!-- Pantalla de inicio -->
       <div id="homeScreen" class="screen visible text-center">
         <img src="img/logo.png" alt="Logo de la aplicación" class="mb-3" style="max-height: 100px;">
         <h2 class="mb-2">Test de Licencia en Cuba</h2>
         <p class="mb-4">Simulador oficial de preguntas del examen teórico</p>
-        <button class="btn btn-main btn-lg w-100 mb-3" onclick="goToScreen('selectScreen')">
+        <button class="btn btn-main btn-lg w-100 mb-3"
+          onclick="goToScreen('selectScreen'); gtag('event', 'click', {'event_category': 'Navigation', 'event_label': 'Start Button'});">
           <i class="bi bi-play-circle me-2"></i>Comenzar
         </button>
-        <button class="btn btn-primary w-100" onclick="showHistory()">
+        <button class="btn btn-primary w-100"
+          onclick="showHistory(); gtag('event', 'click', {'event_category': 'Navigation', 'event_label': 'History Button'});">
           <i class="bi bi-clock-history me-2"></i>Ver historial
         </button>
       </div>
@@ -304,11 +309,15 @@
       <div id="selectScreen" class="screen text-center">
         <h4 class="mb-4"><i class="bi bi-list-ol me-2"></i>Elige cuántas preguntas deseas:</h4>
         <div class="d-grid gap-3">
-          <button class="btn btn-outline-primary" onclick="startTest(20)">20 Preguntas</button>
-          <button class="btn btn-outline-primary" onclick="startTest(40)">40 Preguntas</button>
-          <button class="btn btn-outline-primary" onclick="startTest(100)">100 Preguntas</button>
+          <button class="btn btn-outline-primary"
+            onclick="startTest(20); gtag('event', 'select_test_length', {'test_length': 20});">20 Preguntas</button>
+          <button class="btn btn-outline-primary"
+            onclick="startTest(40); gtag('event', 'select_test_length', {'test_length': 40});">40 Preguntas</button>
+          <button class="btn btn-outline-primary"
+            onclick="startTest(100); gtag('event', 'select_test_length', {'test_length': 100});">100 Preguntas</button>
         </div>
-        <button class="btn btn-secondary mt-4" onclick="goToScreen('homeScreen')">
+        <button class="btn btn-secondary mt-4"
+          onclick="goToScreen('homeScreen'); gtag('event', 'click', {'event_category': 'Navigation', 'event_label': 'Back Button'});">
           <i class="bi bi-arrow-left-circle me-1"></i>Volver
         </button>
       </div>
@@ -321,13 +330,16 @@
         </div>
         <div id="optionsContainer" class="mb-4"></div>
         <div class="d-flex justify-content-between">
-          <button class="btn btn-outline-secondary" onclick="prevQuestion()">
+          <button class="btn btn-outline-secondary"
+            onclick="prevQuestion(); gtag('event', 'click', {'event_category': 'Test Navigation', 'event_label': 'Previous Question'});">
             <i class="bi bi-chevron-left"></i> Anterior
           </button>
-          <button id="finishButton" class="btn btn-danger" onclick="confirmFinish()">
+          <button id="finishButton" class="btn btn-danger"
+            onclick="confirmFinish(); gtag('event', 'click', {'event_category': 'Test Navigation', 'event_label': 'Finish Early'});">
             <i class="bi bi-flag-fill"></i> Finalizar
           </button>
-          <button id="nextButton" class="btn btn-outline-secondary" onclick="nextQuestion()">
+          <button id="nextButton" class="btn btn-outline-secondary"
+            onclick="nextQuestion(); gtag('event', 'click', {'event_category': 'Test Navigation', 'event_label': 'Next Question'});">
             Siguiente <i class="bi bi-chevron-right"></i>
           </button>
         </div>
@@ -360,7 +372,8 @@
         <div id="reviewContainer" class="review-container"></div>
 
         <div class="text-center mt-4">
-          <button class="btn btn-success" onclick="location.reload()">
+          <button class="btn btn-success"
+            onclick="location.reload(); gtag('event', 'click', {'event_category': 'Results', 'event_label': 'Restart Test'});">
             <i class="bi bi-arrow-repeat me-1"></i>Volver a empezar
           </button>
         </div>
@@ -370,7 +383,8 @@
       <div id="historyScreen" class="screen text-center">
         <h4 class="mb-3"><i class="bi bi-clock-history me-2"></i>Historial de puntuaciones</h4>
         <div id="historyContainer" class="text-start"></div>
-        <button class="btn btn-secondary mt-3" onclick="goToScreen('homeScreen')">
+        <button class="btn btn-secondary mt-3"
+          onclick="goToScreen('homeScreen'); gtag('event', 'click', {'event_category': 'Navigation', 'event_label': 'Back to Home'});">
           <i class="bi bi-arrow-left-circle me-1"></i>Volver
         </button>
       </div>
@@ -379,7 +393,8 @@
       <div class="footer animate__animated animate__fadeIn">
         <p>
           Desarrollado con <i class="bi bi-laptop"></i> y <i class="bi bi-cup-hot"></i> por
-          <a href="#" onclick="showCredits()">DNMJustMe</a>
+          <a href="#"
+            onclick="showCredits(); gtag('event', 'click', {'event_category': 'Navigation', 'event_label': 'View Credits'});">DNMJustMe</a>
         </p>
       </div>
     </div>
@@ -391,6 +406,22 @@
     let currentIndex = 0;
     let score = 0;
     const userAnswers = [];
+
+    // Función para rastrear vistas de pantalla
+    function trackScreenView(screenName) {
+      gtag('event', 'screen_view', {
+        'screen_name': screenName,
+        'app_name': 'TestLicenciaCuba',
+        'page_title': screenName,
+        'page_path': '/' + screenName.toLowerCase().replace(/\s+/g, '_')
+      });
+
+      // También como página virtual para GA
+      gtag('config', 'G-L6CJ3M5QMC', {
+        'page_title': screenName,
+        'page_path': '/' + screenName.toLowerCase().replace(/\s+/g, '_')
+      });
+    }
 
     fetch('json.json')
       .then(r => r.json())
@@ -406,7 +437,13 @@
           goToScreen('homeScreen');
         }
       })
-      .catch(err => Swal.fire('Error', 'No se pudieron cargar las preguntas', 'error'));
+      .catch(err => {
+        Swal.fire('Error', 'No se pudieron cargar las preguntas', 'error');
+        gtag('event', 'exception', {
+          'description': 'Error loading questions',
+          'fatal': true
+        });
+      });
 
     function decodeHTML(str) {
       const txt = document.createElement("textarea");
@@ -417,6 +454,19 @@
     function goToScreen(id) {
       document.querySelectorAll('.screen').forEach(el => el.classList.remove('visible'));
       document.getElementById(id).classList.add('visible');
+
+      // Mapeo de IDs a nombres legibles
+      const screenNames = {
+        'homeScreen': 'Inicio',
+        'selectScreen': 'Selección de Test',
+        'questionScreen': 'Realizando Test',
+        'resultScreen': 'Resultados',
+        'historyScreen': 'Historial'
+      };
+
+      if (screenNames[id]) {
+        trackScreenView(screenNames[id]);
+      }
     }
 
     function startTest(count) {
@@ -425,6 +475,12 @@
       score = 0;
       userAnswers.length = 0;
       localStorage.removeItem("testProgress");
+
+      // Evento de inicio de test
+      gtag('event', 'start_test', {
+        'test_length': count
+      });
+
       goToScreen('questionScreen');
       showQuestion();
       saveProgress();
@@ -439,8 +495,20 @@
       if (q.NRO) {
         img.src = `img/i${q.NRO}.png`;
         img.style.display = 'block';
+
+        // Evento de pregunta con imagen
+        gtag('event', 'view_question', {
+          'question_number': currentIndex + 1,
+          'has_image': true
+        });
       } else {
         img.style.display = 'none';
+
+        // Evento de pregunta sin imagen
+        gtag('event', 'view_question', {
+          'question_number': currentIndex + 1,
+          'has_image': false
+        });
       }
 
       const options = [q.RESP1, q.RESP2, q.RESP3];
@@ -484,6 +552,14 @@
     function selectAnswer(num) {
       userAnswers[currentIndex] = { selected: num };
       saveProgress();
+
+      // Evento de respuesta seleccionada
+      gtag('event', 'select_answer', {
+        'question_number': currentIndex + 1,
+        'total_questions': selectedQuestions.length,
+        'answer_selected': num
+      });
+
       document.querySelectorAll('#optionsContainer .form-check').forEach((el, i) => {
         el.classList.toggle('selected', userAnswers[currentIndex].selected === i + 1);
       });
@@ -497,8 +573,14 @@
           text: 'Por favor, selecciona una opción antes de continuar.',
           confirmButtonText: 'Entendido'
         });
+
+        // Evento de intento de avanzar sin respuesta
+        gtag('event', 'missing_answer', {
+          'question_number': currentIndex + 1
+        });
         return;
       }
+
       if (currentIndex < selectedQuestions.length - 1) {
         currentIndex++;
         showQuestion();
@@ -527,7 +609,14 @@
           cancelButtonText: 'No, seguir'
         }).then((result) => {
           if (result.isConfirmed) {
+            // Evento de confirmación para terminar con preguntas sin responder
+            gtag('event', 'confirm_finish_with_unanswered', {
+              'unanswered_count': selectedQuestions.filter((_, i) => !userAnswers[i]?.selected).length
+            });
             finishTest();
+          } else {
+            // Evento de cancelación para terminar
+            gtag('event', 'cancel_finish_with_unanswered');
           }
         });
       } else {
@@ -544,6 +633,13 @@
 
       // Calcular porcentaje
       const percentage = Math.round((score / selectedQuestions.length) * 100);
+
+      // Evento de finalización de test
+      gtag('event', 'complete_test', {
+        'score': percentage,
+        'test_length': selectedQuestions.length,
+        'passed': percentage >= 80
+      });
 
       // Guardar resultado en historial
       saveResultHistory(percentage, selectedQuestions.length);
@@ -629,6 +725,9 @@
         localStorage.setItem("testProgress", JSON.stringify(progress));
       } catch (e) {
         console.warn("No se pudo guardar el progreso:", e);
+        gtag('event', 'storage_error', {
+          'description': 'Error saving progress to localStorage'
+        });
       }
     }
 
@@ -646,6 +745,12 @@
         for (let i = 0; i < progress.userAnswers.length; i++) {
           userAnswers[i] = progress.userAnswers[i];
         }
+
+        // Evento de carga de test en progreso
+        gtag('event', 'resume_test', {
+          'test_length': selectedQuestions.length,
+          'current_question': currentIndex + 1
+        });
 
         goToScreen('questionScreen');
         showQuestion();
@@ -683,6 +788,11 @@
     function showHistory() {
       const history = JSON.parse(localStorage.getItem("testHistory") || "[]");
       const container = document.getElementById("historyContainer");
+
+      // Evento de visualización de historial
+      gtag('event', 'view_history', {
+        'history_items_count': history.length
+      });
 
       if (history.length === 0) {
         container.innerHTML = "<p>No hay puntuaciones registradas aún.</p>";
@@ -736,6 +846,9 @@
         confirmButtonText: 'Cerrar',
         width: '600px'
       });
+
+      // Evento de visualización de créditos
+      gtag('event', 'view_credits');
     }
   </script>
 </body>
