@@ -3,7 +3,7 @@
  * Modelo de Preguntas
  */
 
-require_once 'api/config/database.php';
+require_once 'config/database.php';
 
 class Question {
     private $db;

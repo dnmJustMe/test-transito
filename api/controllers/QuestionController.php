@@ -3,9 +3,9 @@
  * Controlador de Preguntas
  */
 
-require_once 'api/models/Question.php';
-require_once 'api/models/User.php';
-require_once 'api/models/TestSession.php';
+require_once 'models/Question.php';
+require_once 'models/User.php';
+require_once 'models/TestSession.php';
 
 class QuestionController {
     private $questionModel;

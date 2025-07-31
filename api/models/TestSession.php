@@ -3,7 +3,7 @@
  * Modelo de Sesiones de Test
  */
 
-require_once 'api/config/database.php';
+require_once 'config/database.php';
 
 class TestSession {
     private $db;

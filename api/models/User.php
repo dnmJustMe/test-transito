@@ -3,7 +3,7 @@
  * Modelo de Usuario
  */
 
-require_once 'api/config/database.php';
+require_once 'config/database.php';
 
 class User {
     private $db;

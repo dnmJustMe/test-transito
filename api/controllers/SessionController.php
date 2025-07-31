@@ -3,8 +3,8 @@
  * Controlador de Sesiones de Test
  */
 
-require_once 'api/models/TestSession.php';
-require_once 'api/models/User.php';
+require_once 'models/TestSession.php';
+require_once 'models/User.php';
 
 class SessionController {
     private $sessionModel;

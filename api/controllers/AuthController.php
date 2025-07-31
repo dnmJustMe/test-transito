@@ -3,7 +3,7 @@
  * Controlador de Autenticación
  */
 
-require_once 'api/models/User.php';
+require_once 'models/User.php';
 
 class AuthController {
     private $userModel;
