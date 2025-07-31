@@ -132,6 +132,32 @@ body {
     font-size: 1.2rem;
 }
 
+#test-interface {
+    background-color: #f8f9fa;
+    padding: 2rem 0;
+}
+
+#test-interface .card {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#test-interface .form-check {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+#test-interface .form-check:hover {
+    background-color: #f8f9fa;
+}
+
+#test-interface .form-check-input:checked + .form-check-label {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
 /* Dificultad cards */
 .difficulty-card {
     cursor: pointer;

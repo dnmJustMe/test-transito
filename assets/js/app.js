@@ -84,6 +84,19 @@ function setupEventListeners() {
     });
 }
 
+// Funciones de modal que faltaban
+function showLoginModal() {
+    $('#loginModal').modal('show');
+}
+
+function showRegisterModal() {
+    $('#registerModal').modal('show');
+}
+
+function showAddQuestionModal() {
+    $('#addQuestionModal').modal('show');
+}
+
 function checkAuthStatus() {
     const token = localStorage.getItem('token');
     if (token) {
@@ -119,7 +132,7 @@ function updateUIForLoggedInUser() {
     $('.user-only').show();
     $('.admin-only').toggle(currentUser.role === 'admin');
     
-    $('#userMenu').show();
+    $('#userMenu').removeClass('guest-only').show();
     $('#authButtons').hide();
     
     $('#userName').text(currentUser.first_name + ' ' + currentUser.last_name);
@@ -135,7 +148,7 @@ function updateUIForGuest() {
     $('.user-only').hide();
     $('.admin-only').hide();
     
-    $('#userMenu').hide();
+    $('#userMenu').addClass('guest-only').hide();
     $('#authButtons').show();
     
     currentUser = null;

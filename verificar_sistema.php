@@ -38,6 +38,17 @@ $criticalFiles = [
 foreach ($criticalFiles as $file) {
     echo "- $file: " . (file_exists($file) ? '✓ Existe' : '✗ No existe') . "\n";
 }
+
+// Verificar archivos de imagen
+echo "\n- Archivos de imagen:\n";
+$imageFiles = [
+    'assets/img/logo.png' => 'Logo del sistema',
+    'assets/img/favicon.ico' => 'Favicon del sistema'
+];
+
+foreach ($imageFiles as $file => $description) {
+    echo "- $description ($file): " . (file_exists($file) ? '✓ Existe' : '✗ No existe (placeholder)') . "\n";
+}
 echo "\n";
 
 // 3. Verificar directorios y permisos
@@ -139,7 +150,9 @@ $requiredElements = [
     'start-test-btn' => 'Botones de iniciar test',
     'difficulty-card' => 'Cards de dificultad',
     'test-interface' => 'Interfaz de test',
-    'admin' => 'Sección de administración'
+    'admin' => 'Sección de administración',
+    'logo.png' => 'Logo del sistema',
+    'favicon.ico' => 'Favicon del sistema'
 ];
 
 foreach ($requiredElements as $element => $description) {
@@ -150,9 +163,24 @@ foreach ($requiredElements as $element => $description) {
     }
 }
 
+// Verificar control de acceso
+echo "\n- Control de acceso:\n";
+if (strpos($htmlContent, 'guest-only') !== false && strpos($htmlContent, 'user-only') !== false && strpos($htmlContent, 'admin-only') !== false) {
+    echo "  ✓ Clases de control de acceso presentes\n";
+} else {
+    echo "  ✗ Clases de control de acceso faltantes\n";
+}
+
+if (strpos($htmlContent, 'updateUIForLoggedInUser') !== false && strpos($htmlContent, 'updateUIForGuest') !== false) {
+    echo "  ✓ Funciones de actualización de UI presentes\n";
+} else {
+    echo "  ✗ Funciones de actualización de UI faltantes\n";
+}
+
 $requiredFunctions = [
     'showLoginModal' => 'Función mostrar login',
     'showRegisterModal' => 'Función mostrar registro',
+    'showAddQuestionModal' => 'Función mostrar modal pregunta',
     'startTest' => 'Función iniciar test',
     'loadUserLives' => 'Función cargar vidas',
     'updateUIForLoggedInUser' => 'Función actualizar UI usuario',
@@ -175,7 +203,7 @@ $cssContent = file_get_contents('assets/css/style.css');
 $requiredStyles = [
     '.difficulty-card' => 'Estilos para cards de dificultad',
     '.life-indicator' => 'Estilos para indicador de vidas',
-    '.test-interface' => 'Estilos para interfaz de test',
+    '#test-interface' => 'Estilos para interfaz de test',
     '.admin-tab-content' => 'Estilos para panel admin',
     '.question-admin-card' => 'Estilos para preguntas en admin'
 ];
@@ -199,6 +227,7 @@ echo "- Prueba el login con admin/admin123\n";
 echo "- Verifica que las vidas se regeneren cada 5 minutos\n";
 echo "- Prueba crear preguntas desde el panel de administración\n";
 echo "- Verifica que los tests funcionen con las 3 dificultades\n";
+echo "- Reemplaza los archivos placeholder de logo.png y favicon.ico con tus archivos reales\n";
 echo "\n";
 
 // 9. Resumen

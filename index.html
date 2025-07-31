@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Test de Tránsito</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.ico">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -19,7 +23,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="#home">
-                <i class="bi bi-car-front"></i> Test de Tránsito
+                <img src="assets/img/logo.png" alt="Logo" height="30" class="d-inline-block align-text-top me-2">
+                Test de Tránsito
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -56,7 +61,7 @@
                 </div>
                 
                 <!-- Menú de usuario -->
-                <div id="userMenu" class="d-flex align-items-center" style="display: none;">
+                <div id="userMenu" class="d-flex align-items-center guest-only" style="display: none;">
                     <div class="dropdown">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> <span id="userName">Usuario</span>
