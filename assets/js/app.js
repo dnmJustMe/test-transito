@@ -132,7 +132,7 @@ function updateUIForLoggedInUser() {
     $('.user-only').show();
     $('.admin-only').toggle(currentUser.role === 'admin');
     
-    $('#userMenu').removeClass('guest-only').show();
+    $('#userMenu').show();
     $('#authButtons').hide();
     
     $('#userName').text(currentUser.first_name + ' ' + currentUser.last_name);
@@ -148,7 +148,7 @@ function updateUIForGuest() {
     $('.user-only').hide();
     $('.admin-only').hide();
     
-    $('#userMenu').addClass('guest-only').hide();
+    $('#userMenu').hide();
     $('#authButtons').show();
     
     currentUser = null;
