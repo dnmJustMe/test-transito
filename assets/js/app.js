@@ -3,6 +3,7 @@ const API_BASE_URL = 'http://localhost/test-transito/api/';
 let currentUser = null;
 let currentTest = null;
 let testTimer = null;
+let lifeRegenerationTimer = null;
 
 // Configurar SweetAlert2
 Swal.mixin({
@@ -18,6 +19,7 @@ $(document).ready(function() {
     setupEventListeners();
     checkAuthStatus();
     showSection('home');
+    loadPublicStats();
 });
 
 function setupEventListeners() {
@@ -55,11 +57,13 @@ function setupEventListeners() {
         updateProfile();
     });
 
-    // Botones de acción
-    $('#startTestBtn').on('click', function() {
-        startTest();
+    // Botones de test
+    $('.start-test-btn').on('click', function() {
+        const difficulty = $(this).data('difficulty');
+        startTest(difficulty);
     });
 
+    // Finalizar test
     $('#finishTestBtn').on('click', function() {
         finishTest();
     });
@@ -71,6 +75,12 @@ function setupEventListeners() {
 
     $('#prevQuestionBtn').on('click', function() {
         prevQuestion();
+    });
+
+    // Formulario de agregar pregunta
+    $('#addQuestionForm').on('submit', function(e) {
+        e.preventDefault();
+        addQuestion();
     });
 }
 
@@ -88,6 +98,7 @@ function checkAuthStatus() {
                 if (response.success) {
                     currentUser = response.data;
                     updateUIForLoggedInUser();
+                    startLifeRegenerationTimer();
                 } else {
                     localStorage.removeItem('token');
                     updateUIForGuest();
@@ -113,6 +124,10 @@ function updateUIForLoggedInUser() {
     
     $('#userName').text(currentUser.first_name + ' ' + currentUser.last_name);
     $('#userRole').text(currentUser.role === 'admin' ? 'Administrador' : 'Usuario');
+    $('#userLives').text(currentUser.lives);
+    
+    // Actualizar vidas en la sección de tests
+    $('#currentLives').text(currentUser.lives);
 }
 
 function updateUIForGuest() {
@@ -124,6 +139,11 @@ function updateUIForGuest() {
     $('#authButtons').show();
     
     currentUser = null;
+    
+    if (lifeRegenerationTimer) {
+        clearInterval(lifeRegenerationTimer);
+        lifeRegenerationTimer = null;
+    }
 }
 
 function showSection(sectionName) {
@@ -145,7 +165,7 @@ function showSection(sectionName) {
         switch(sectionName) {
             case 'tests':
                 if (currentUser) {
-                    loadCategories();
+                    loadUserLives();
                 } else {
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para realizar tests', 'warning');
@@ -184,7 +204,7 @@ function showSection(sectionName) {
                 }
                 break;
             case 'home':
-                loadHomeStats();
+                loadPublicStats();
                 break;
         }
     } else {
@@ -193,29 +213,80 @@ function showSection(sectionName) {
     }
 }
 
-function loadHomeStats() {
-    // Cargar estadísticas públicas
+function loadPublicStats() {
     $.ajax({
-        url: API_BASE_URL + 'categories/with-count',
+        url: API_BASE_URL + 'sessions/public-stats',
         method: 'GET',
         success: function(response) {
             if (response.success) {
-                let totalQuestions = 0;
-                response.data.forEach(category => {
-                    totalQuestions += parseInt(category.question_count || 0);
-                });
-                
-                $('#totalCategories').text(response.data.length);
-                $('#totalQuestions').text(totalQuestions);
-                $('#totalUsers').text('100+'); // Placeholder
+                $('#totalUsers').text(response.data.total_users);
+                $('#totalTests').text(response.data.total_tests);
+                $('#totalQuestions').text(response.data.total_questions);
+                $('#averageScore').text(response.data.average_score + '%');
             }
         },
         error: function() {
-            $('#totalCategories').text('20');
-            $('#totalQuestions').text('100');
-            $('#totalUsers').text('100+');
+            // Valores por defecto
+            $('#totalUsers').text('0');
+            $('#totalTests').text('0');
+            $('#totalQuestions').text('0');
+            $('#averageScore').text('0%');
         }
     });
+}
+
+function loadUserLives() {
+    if (!currentUser) return;
+    
+    $.ajax({
+        url: API_BASE_URL + 'auth/lives',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            if (response.success) {
+                currentUser.lives = response.data.lives;
+                $('#currentLives').text(response.data.lives);
+                $('#userLives').text(response.data.lives);
+                
+                if (!response.data.can_take_test) {
+                    $('.start-test-btn').prop('disabled', true);
+                    $('#lifeRegenerationInfo').show();
+                    
+                    if (response.data.last_life_lost) {
+                        const lastLost = new Date(response.data.last_life_lost);
+                        const now = new Date();
+                        const diff = now - lastLost;
+                        const minutesPassed = Math.floor(diff / (1000 * 60));
+                        const minutesLeft = Math.max(0, 5 - minutesPassed);
+                        
+                        if (minutesLeft > 0) {
+                            $('#regenerationTime').text(minutesLeft + ' minutos');
+                        } else {
+                            $('#lifeRegenerationInfo').hide();
+                            $('.start-test-btn').prop('disabled', false);
+                        }
+                    }
+                } else {
+                    $('.start-test-btn').prop('disabled', false);
+                    $('#lifeRegenerationInfo').hide();
+                }
+            }
+        }
+    });
+}
+
+function startLifeRegenerationTimer() {
+    if (lifeRegenerationTimer) {
+        clearInterval(lifeRegenerationTimer);
+    }
+    
+    lifeRegenerationTimer = setInterval(function() {
+        if (currentUser) {
+            loadUserLives();
+        }
+    }, 30000); // Verificar cada 30 segundos
 }
 
 function login() {
@@ -237,36 +308,24 @@ function login() {
         }),
         success: function(response) {
             if (response.success) {
-                // Manejar diferentes estructuras de respuesta
-                let token, user;
-                if (response.data && response.data.token) {
-                    token = response.data.token;
-                    user = response.data.user;
-                } else if (response.token) {
-                    token = response.token;
-                    user = response.user;
-                } else {
-                    Swal.fire('Error', 'Respuesta del servidor inválida', 'error');
-                    return;
-                }
-                
-                localStorage.setItem('token', token);
-                currentUser = user;
+                localStorage.setItem('token', response.data.token);
+                currentUser = response.data.user;
                 
                 $('#loginModal').modal('hide');
                 $('#loginForm')[0].reset();
                 
                 updateUIForLoggedInUser();
+                startLifeRegenerationTimer();
                 showSection('home');
                 
                 Swal.fire('¡Bienvenido!', 'Has iniciado sesión correctamente', 'success');
             } else {
-                Swal.fire('Error', response.error || 'Error al iniciar sesión', 'error');
+                Swal.fire('Error', response.message || 'Error al iniciar sesión', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
-            Swal.fire('Error', response?.error || 'Error al iniciar sesión', 'error');
+            Swal.fire('Error', response?.message || 'Error al iniciar sesión', 'error');
         }
     });
 }
@@ -303,12 +362,12 @@ function register() {
                 
                 Swal.fire('¡Registro Exitoso!', 'Tu cuenta ha sido creada. Ahora puedes iniciar sesión.', 'success');
             } else {
-                Swal.fire('Error', response.error || 'Error al registrar usuario', 'error');
+                Swal.fire('Error', response.message || 'Error al registrar usuario', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
-            Swal.fire('Error', response?.error || 'Error al registrar usuario', 'error');
+            Swal.fire('Error', response?.message || 'Error al registrar usuario', 'error');
         }
     });
 }
@@ -360,12 +419,12 @@ function updateProfile() {
                 updateUIForLoggedInUser();
                 Swal.fire('Éxito', 'Perfil actualizado correctamente', 'success');
             } else {
-                Swal.fire('Error', response.error || 'Error al actualizar perfil', 'error');
+                Swal.fire('Error', response.message || 'Error al actualizar perfil', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
-            Swal.fire('Error', response?.error || 'Error al actualizar perfil', 'error');
+            Swal.fire('Error', response?.message || 'Error al actualizar perfil', 'error');
         }
     });
 }
@@ -396,53 +455,11 @@ function loadUserStats() {
     });
 }
 
-function loadCategories() {
-    $.ajax({
-        url: API_BASE_URL + 'categories/with-count',
-        method: 'GET',
-        success: function(response) {
-            if (response.success) {
-                const categoriesContainer = $('#categoriesContainer');
-                categoriesContainer.empty();
-                
-                response.data.forEach(category => {
-                    const categoryCard = `
-                        <div class="col-md-6 col-lg-4 mb-4">
-                            <div class="card h-100 category-card" data-category-id="${category.id}">
-                                <div class="card-body">
-                                    <h5 class="card-title">${category.name}</h5>
-                                    <p class="card-text">${category.description || ''}</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="badge bg-primary">${category.question_count || 0} preguntas</span>
-                                        <button class="btn btn-success btn-sm start-test-btn" data-category-id="${category.id}">
-                                            Iniciar Test
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    categoriesContainer.append(categoryCard);
-                });
-                
-                // Event listeners para botones de test
-                $('.start-test-btn').on('click', function() {
-                    const categoryId = $(this).data('category-id');
-                    startTest(categoryId);
-                });
-            }
-        },
-        error: function() {
-            Swal.fire('Error', 'Error al cargar las categorías', 'error');
-        }
-    });
-}
-
-function startTest(categoryId = null) {
-    const testData = {
-        category_id: categoryId,
-        question_count: 20
-    };
+function startTest(difficulty) {
+    if (!currentUser) {
+        Swal.fire('Error', 'Debes iniciar sesión para realizar tests', 'error');
+        return;
+    }
     
     $.ajax({
         url: API_BASE_URL + 'questions/start-test',
@@ -451,26 +468,29 @@ function startTest(categoryId = null) {
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
-        data: JSON.stringify(testData),
+        data: JSON.stringify({
+            difficulty: difficulty
+        }),
         success: function(response) {
             if (response.success) {
                 currentTest = {
                     questions: response.data.questions,
                     currentQuestion: 0,
                     answers: {},
-                    startTime: Date.now()
+                    startTime: Date.now(),
+                    difficulty: difficulty
                 };
                 
                 showTestInterface();
                 displayQuestion(0);
                 startTimer();
             } else {
-                Swal.fire('Error', response.error || 'Error al iniciar el test', 'error');
+                Swal.fire('Error', response.message || 'Error al iniciar el test', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
-            Swal.fire('Error', response?.error || 'Error al iniciar el test', 'error');
+            Swal.fire('Error', response?.message || 'Error al iniciar el test', 'error');
         }
     });
 }
@@ -503,8 +523,8 @@ function displayQuestion(questionIndex) {
     }
     
     // Show/hide image if exists
-    if (question.image_url) {
-        $('#questionImage').attr('src', question.image_url).show();
+    if (question.image_path) {
+        $('#questionImage').attr('src', question.image_path).show();
         $('#questionImageContainer').show();
     } else {
         $('#questionImageContainer').hide();
@@ -580,36 +600,64 @@ function finishTest() {
     
     saveCurrentAnswer();
     
-    // Calcular resultados
-    let correctAnswers = 0;
-    const totalQuestions = currentTest.questions.length;
-    
+    // Preparar respuestas para enviar
+    const answers = [];
     currentTest.questions.forEach((question, index) => {
         const userAnswer = currentTest.answers[index];
-        if (userAnswer === question.correct_answer) {
-            correctAnswers++;
+        if (userAnswer) {
+            answers.push({
+                question_id: question.id,
+                user_answer: userAnswer
+            });
         }
     });
     
-    const score = Math.round((correctAnswers / totalQuestions) * 100);
-    const timeTaken = Math.floor((Date.now() - currentTest.startTime) / 1000);
-    
-    // Mostrar resultados
-    Swal.fire({
-        title: 'Test Completado',
-        html: `
-            <div class="text-center">
-                <h3>Resultados</h3>
-                <p><strong>Puntuación:</strong> ${score}%</p>
-                <p><strong>Respuestas correctas:</strong> ${correctAnswers}/${totalQuestions}</p>
-                <p><strong>Tiempo utilizado:</strong> ${Math.floor(timeTaken / 60)}:${(timeTaken % 60).toString().padStart(2, '0')}</p>
-            </div>
-        `,
-        icon: score >= 70 ? 'success' : 'warning',
-        confirmButtonText: 'Ver Historial'
-    }).then((result) => {
-        showSection('history');
-        loadHistory();
+    $.ajax({
+        url: API_BASE_URL + 'questions/finish-test',
+        method: 'POST',
+        contentType: 'application/json',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        data: JSON.stringify({
+            difficulty: currentTest.difficulty,
+            answers: answers
+        }),
+        success: function(response) {
+            if (response.success) {
+                const result = response.data;
+                
+                // Mostrar resultados
+                Swal.fire({
+                    title: result.passed ? '¡Test Aprobado!' : 'Test No Aprobado',
+                    html: `
+                        <div class="text-center">
+                            <h3>Resultados</h3>
+                            <p><strong>Puntuación:</strong> ${result.score}%</p>
+                            <p><strong>Respuestas correctas:</strong> ${result.correct_answers}/${result.total_questions}</p>
+                            <p><strong>Estado:</strong> ${result.passed ? 'Aprobado' : 'No Aprobado'}</p>
+                            ${result.lives_lost > 0 ? `<p><strong>Vidas perdidas:</strong> ${result.lives_lost}</p>` : ''}
+                        </div>
+                    `,
+                    icon: result.passed ? 'success' : 'warning',
+                    confirmButtonText: 'Ver Historial'
+                }).then((result) => {
+                    showSection('history');
+                    loadHistory();
+                });
+                
+                // Actualizar vidas del usuario
+                if (currentUser) {
+                    loadUserLives();
+                }
+            } else {
+                Swal.fire('Error', response.message || 'Error al finalizar el test', 'error');
+            }
+        },
+        error: function(xhr) {
+            const response = xhr.responseJSON;
+            Swal.fire('Error', response?.message || 'Error al finalizar el test', 'error');
+        }
     });
     
     // Limpiar test actual
@@ -641,11 +689,13 @@ function loadHistory() {
                                 <div class="card-body">
                                     <h6 class="card-title">Test #${session.id}</h6>
                                     <p class="card-text">
-                                        <small class="text-muted">${new Date(session.created_at).toLocaleDateString()}</small>
+                                        <small class="text-muted">${new Date(session.completed_at).toLocaleDateString()}</small>
+                                        <br>
+                                        <span class="badge bg-${session.difficulty === 'easy' ? 'success' : session.difficulty === 'medium' ? 'warning' : 'danger'}">${session.difficulty}</span>
                                     </p>
                                     <div class="d-flex justify-content-between">
-                                        <span class="badge bg-${session.score >= 70 ? 'success' : 'warning'}">${session.score}%</span>
-                                        <span class="text-muted">${session.correct_answers}/${session.total_questions}</span>
+                                        <span class="badge bg-${session.passed ? 'success' : 'warning'}">${session.score}%</span>
+                                        <span class="text-muted">${session.correct_answers}/${session.question_count}</span>
                                     </div>
                                 </div>
                             </div>
@@ -664,54 +714,134 @@ function loadHistory() {
 function loadAdminDashboard() {
     // Cargar estadísticas del admin
     $.ajax({
-        url: API_BASE_URL + 'categories/with-count',
+        url: API_BASE_URL + 'admin/stats',
         method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
         success: function(response) {
             if (response.success) {
-                const adminContainer = $('#adminContainer');
-                adminContainer.empty();
-                
-                response.data.forEach(category => {
-                    const categoryRow = `
-                        <tr>
-                            <td>${category.name}</td>
-                            <td>${category.question_count || 0}</td>
-                            <td>
-                                <button class="btn btn-sm btn-primary edit-category-btn" data-id="${category.id}">Editar</button>
-                                <button class="btn btn-sm btn-success add-question-btn" data-category-id="${category.id}">Agregar Pregunta</button>
-                            </td>
-                        </tr>
-                    `;
-                    adminContainer.append(categoryRow);
-                });
+                const stats = response.data;
+                $('#adminTotalQuestions').text(stats.total_questions || 0);
+                $('#adminTotalUsers').text(stats.total_users || 0);
+                $('#adminTotalTests').text(stats.total_tests || 0);
+                $('#adminAverageScore').text((stats.average_score || 0) + '%');
             }
         },
         error: function() {
             Swal.fire('Error', 'Error al cargar el dashboard', 'error');
         }
     });
+    
+    // Cargar preguntas
+    loadAdminQuestions();
+    loadAdminUsers();
 }
 
-// Event listeners para admin
-$(document).on('click', '.add-question-btn', function() {
-    const categoryId = $(this).data('category-id');
-    $('#addQuestionModal').modal('show');
-    $('#questionCategory').val(categoryId);
-});
+function loadAdminQuestions() {
+    $.ajax({
+        url: API_BASE_URL + 'questions',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            if (response.success) {
+                const questionsContainer = $('#questionsContainer');
+                questionsContainer.empty();
+                
+                response.data.questions.forEach(question => {
+                    const questionCard = `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Pregunta #${question.id}</h6>
+                                <p class="card-text">${question.question_text}</p>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <small class="text-muted">Respuesta 1: ${question.answer1}</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted">Respuesta 2: ${question.answer2}</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted">Respuesta 3: ${question.answer3}</small>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge bg-success">Correcta: ${question.correct_answer}</span>
+                                    ${question.image_path ? '<span class="badge bg-info ms-1">Con imagen</span>' : ''}
+                                </div>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-primary edit-question-btn" data-id="${question.id}">Editar</button>
+                                    <button class="btn btn-sm btn-danger delete-question-btn" data-id="${question.id}">Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    questionsContainer.append(questionCard);
+                });
+            }
+        },
+        error: function() {
+            Swal.fire('Error', 'Error al cargar las preguntas', 'error');
+        }
+    });
+}
 
-$('#addQuestionForm').on('submit', function(e) {
-    e.preventDefault();
-    
+function loadAdminUsers() {
+    $.ajax({
+        url: API_BASE_URL + 'admin/users',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            if (response.success) {
+                const usersContainer = $('#usersContainer');
+                usersContainer.empty();
+                
+                response.data.forEach(user => {
+                    const userCard = `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">${user.first_name} ${user.last_name}</h6>
+                                <p class="card-text">
+                                    <small class="text-muted">${user.email}</small><br>
+                                    <span class="badge bg-${user.role === 'admin' ? 'danger' : 'primary'}">${user.role}</span>
+                                    <span class="badge bg-warning ms-1">Vidas: ${user.lives}</span>
+                                </p>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-success add-life-btn" data-id="${user.id}">+1 Vida</button>
+                                    <button class="btn btn-sm btn-warning add-life-btn" data-id="${user.id}" data-lives="2">+2 Vidas</button>
+                                    <button class="btn btn-sm btn-info add-life-btn" data-id="${user.id}" data-lives="3">+3 Vidas</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    usersContainer.append(userCard);
+                });
+            }
+        },
+        error: function() {
+            Swal.fire('Error', 'Error al cargar los usuarios', 'error');
+        }
+    });
+}
+
+function addQuestion() {
     const formData = {
-        category_id: $('#questionCategory').val(),
-        nro: $('#questionNro').val(),
         question_text: $('#questionText').val(),
         answer1: $('#questionAnswer1').val(),
         answer2: $('#questionAnswer2').val(),
         answer3: $('#questionAnswer3').val(),
-        correct_answer: parseInt($('input[name="correctAnswer"]:checked').val()),
-        article_reference: $('#questionArticle').val()
+        correct_answer: parseInt($('input[name="correctAnswer"]:checked').val())
     };
+    
+    // Validaciones
+    if (!formData.question_text || !formData.answer1 || !formData.answer2 || !formData.answer3 || !formData.correct_answer) {
+        Swal.fire('Error', 'Por favor completa todos los campos', 'error');
+        return;
+    }
     
     $.ajax({
         url: API_BASE_URL + 'questions',
@@ -725,15 +855,83 @@ $('#addQuestionForm').on('submit', function(e) {
             if (response.success) {
                 $('#addQuestionModal').modal('hide');
                 $('#addQuestionForm')[0].reset();
-                loadAdminDashboard();
+                loadAdminQuestions();
                 Swal.fire('Éxito', 'Pregunta agregada correctamente', 'success');
             } else {
-                Swal.fire('Error', response.error || 'Error al agregar pregunta', 'error');
+                Swal.fire('Error', response.message || 'Error al agregar pregunta', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
-            Swal.fire('Error', response?.error || 'Error al agregar pregunta', 'error');
+            Swal.fire('Error', response?.message || 'Error al agregar pregunta', 'error');
+        }
+    });
+}
+
+// Event listeners para admin
+$(document).on('click', '.add-life-btn', function() {
+    const userId = $(this).data('id');
+    const lives = $(this).data('lives') || 1;
+    
+    $.ajax({
+        url: API_BASE_URL + 'auth/add-lives',
+        method: 'POST',
+        contentType: 'application/json',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        data: JSON.stringify({
+            user_id: userId,
+            lives: lives
+        }),
+        success: function(response) {
+            if (response.success) {
+                loadAdminUsers();
+                Swal.fire('Éxito', 'Vidas agregadas correctamente', 'success');
+            } else {
+                Swal.fire('Error', response.message || 'Error al agregar vidas', 'error');
+            }
+        },
+        error: function(xhr) {
+            const response = xhr.responseJSON;
+            Swal.fire('Error', response?.message || 'Error al agregar vidas', 'error');
+        }
+    });
+});
+
+$(document).on('click', '.delete-question-btn', function() {
+    const questionId = $(this).data('id');
+    
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: API_BASE_URL + 'questions/' + questionId,
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        loadAdminQuestions();
+                        Swal.fire('Eliminado', 'Pregunta eliminada correctamente', 'success');
+                    } else {
+                        Swal.fire('Error', response.message || 'Error al eliminar pregunta', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    Swal.fire('Error', response?.message || 'Error al eliminar pregunta', 'error');
+                }
+            });
         }
     });
 });

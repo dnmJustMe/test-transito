@@ -1,154 +1,129 @@
 <?php
-require_once __DIR__ . '/../includes/Database.php';
+/**
+ * Modelo de Sesiones de Test
+ */
+
+require_once 'api/config/database.php';
 
 class TestSession {
     private $db;
     
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = new Database();
     }
     
     public function create($data) {
-        try {
-            $sql = "INSERT INTO test_sessions (user_id, test_id, total_questions) 
-                    VALUES (:user_id, :test_id, :total_questions)";
-            
-            $params = [
-                ':user_id' => $data['user_id'],
-                ':test_id' => $data['test_id'],
-                ':total_questions' => $data['total_questions']
-            ];
-            
-            $this->db->query($sql, $params);
-            return $this->db->lastInsertId();
-        } catch (Exception $e) {
-            throw new Exception("Error al crear sesión de test: " . $e->getMessage());
-        }
+        $sql = "INSERT INTO test_sessions (user_id, difficulty, question_count, correct_answers, score, passed) 
+                VALUES (?, ?, ?, ?, ?, ?)";
+        
+        $params = [
+            $data['user_id'],
+            $data['difficulty'],
+            $data['question_count'],
+            $data['correct_answers'],
+            $data['score'],
+            $data['passed']
+        ];
+        
+        $this->db->query($sql, $params);
+        return $this->db->lastInsertId();
     }
     
     public function findById($id) {
-        try {
-            $sql = "SELECT ts.*, t.name as test_name, u.first_name, u.last_name 
-                    FROM test_sessions ts 
-                    LEFT JOIN tests t ON ts.test_id = t.id 
-                    LEFT JOIN users u ON ts.user_id = u.id 
-                    WHERE ts.id = :id";
-            return $this->db->fetch($sql, [':id' => $id]);
-        } catch (Exception $e) {
-            throw new Exception("Error al buscar sesión: " . $e->getMessage());
+        $sql = "SELECT * FROM test_sessions WHERE id = ?";
+        $stmt = $this->db->query($sql, [$id]);
+        return $stmt->fetch();
+    }
+    
+    public function getByUser($userId, $page = 1, $limit = 20) {
+        $offset = ($page - 1) * $limit;
+        $sql = "SELECT * FROM test_sessions WHERE user_id = ? ORDER BY completed_at DESC LIMIT ? OFFSET ?";
+        $stmt = $this->db->query($sql, [$userId, $limit, $offset]);
+        return $stmt->fetchAll();
+    }
+    
+    public function getStatsByUser($userId) {
+        $sql = "SELECT 
+                COUNT(*) as total_tests,
+                COUNT(CASE WHEN passed = 1 THEN 1 END) as passed_tests,
+                COUNT(CASE WHEN passed = 0 THEN 1 END) as failed_tests,
+                AVG(score) as average_score,
+                MAX(score) as best_score,
+                COUNT(CASE WHEN difficulty = 'easy' THEN 1 END) as easy_tests,
+                COUNT(CASE WHEN difficulty = 'medium' THEN 1 END) as medium_tests,
+                COUNT(CASE WHEN difficulty = 'hard' THEN 1 END) as hard_tests
+                FROM test_sessions WHERE user_id = ?";
+        
+        $stmt = $this->db->query($sql, [$userId]);
+        return $stmt->fetch();
+    }
+    
+    public function getGlobalStats() {
+        $sql = "SELECT 
+                COUNT(*) as total_tests,
+                COUNT(CASE WHEN passed = 1 THEN 1 END) as passed_tests,
+                COUNT(CASE WHEN passed = 0 THEN 1 END) as failed_tests,
+                AVG(score) as average_score,
+                COUNT(DISTINCT user_id) as unique_users,
+                COUNT(CASE WHEN difficulty = 'easy' THEN 1 END) as easy_tests,
+                COUNT(CASE WHEN difficulty = 'medium' THEN 1 END) as medium_tests,
+                COUNT(CASE WHEN difficulty = 'hard' THEN 1 END) as hard_tests
+                FROM test_sessions";
+        
+        $stmt = $this->db->query($sql);
+        return $stmt->fetch();
+    }
+    
+    public function saveUserAnswers($sessionId, $answers) {
+        $sql = "INSERT INTO user_answers (session_id, question_id, user_answer, is_correct) VALUES (?, ?, ?, ?)";
+        
+        foreach ($answers as $answer) {
+            $this->db->query($sql, [
+                $sessionId,
+                $answer['question_id'],
+                $answer['user_answer'],
+                $answer['is_correct']
+            ]);
         }
     }
     
-    public function update($id, $data) {
-        try {
-            $sql = "UPDATE test_sessions SET 
-                    end_time = :end_time,
-                    score = :score,
-                    correct_answers = :correct_answers,
-                    status = :status
-                    WHERE id = :id";
-            
-            $params = [
-                ':id' => $id,
-                ':end_time' => $data['end_time'],
-                ':score' => $data['score'],
-                ':correct_answers' => $data['correct_answers'],
-                ':status' => $data['status']
-            ];
-            
-            $this->db->query($sql, $params);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al actualizar sesión: " . $e->getMessage());
-        }
+    public function getUserAnswers($sessionId) {
+        $sql = "SELECT ua.*, q.question_text, q.answer1, q.answer2, q.answer3, q.correct_answer, q.image_path
+                FROM user_answers ua
+                JOIN questions q ON ua.question_id = q.id
+                WHERE ua.session_id = ?
+                ORDER BY ua.answered_at";
+        
+        $stmt = $this->db->query($sql, [$sessionId]);
+        return $stmt->fetchAll();
     }
     
-    public function getByUser($userId, $page = 1, $limit = 10) {
-        try {
-            $offset = ($page - 1) * $limit;
-            $sql = "SELECT ts.*, t.name as test_name 
-                    FROM test_sessions ts 
-                    LEFT JOIN tests t ON ts.test_id = t.id 
-                    WHERE ts.user_id = :user_id 
-                    ORDER BY ts.created_at DESC 
-                    LIMIT :limit OFFSET :offset";
-            
-            $params = [
-                ':user_id' => $userId,
-                ':limit' => $limit,
-                ':offset' => $offset
-            ];
-            
-            return $this->db->fetchAll($sql, $params);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener sesiones del usuario: " . $e->getMessage());
-        }
+    public function delete($id) {
+        $sql = "DELETE FROM test_sessions WHERE id = ?";
+        return $this->db->query($sql, [$id]);
     }
     
-    public function getInProgress($userId) {
-        try {
-            $sql = "SELECT ts.*, t.name as test_name 
-                    FROM test_sessions ts 
-                    LEFT JOIN tests t ON ts.test_id = t.id 
-                    WHERE ts.user_id = :user_id AND ts.status = 'in_progress'";
-            
-            return $this->db->fetch($sql, [':user_id' => $userId]);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener sesión en progreso: " . $e->getMessage());
-        }
+    public function getRecentTests($limit = 10) {
+        $sql = "SELECT ts.*, u.username, u.first_name, u.last_name
+                FROM test_sessions ts
+                JOIN users u ON ts.user_id = u.id
+                ORDER BY ts.completed_at DESC
+                LIMIT ?";
+        
+        $stmt = $this->db->query($sql, [$limit]);
+        return $stmt->fetchAll();
     }
     
-    public function countByUser($userId) {
-        try {
-            $sql = "SELECT COUNT(*) as total FROM test_sessions WHERE user_id = :user_id";
-            $result = $this->db->fetch($sql, [':user_id' => $userId]);
-            return $result['total'];
-        } catch (Exception $e) {
-            throw new Exception("Error al contar sesiones: " . $e->getMessage());
-        }
-    }
-    
-    public function getStats($userId) {
-        try {
-            $sql = "SELECT 
-                        COUNT(*) as total_tests,
-                        AVG(score) as average_score,
-                        MAX(score) as best_score,
-                        COUNT(CASE WHEN score >= 70 THEN 1 END) as passed_tests
-                    FROM test_sessions 
-                    WHERE user_id = :user_id AND status = 'completed'";
-            
-            return $this->db->fetch($sql, [':user_id' => $userId]);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener estadísticas: " . $e->getMessage());
-        }
-    }
-    
-    public function getAll($page = 1, $limit = 10) {
-        try {
-            $offset = ($page - 1) * $limit;
-            $sql = "SELECT ts.*, t.name as test_name, u.first_name, u.last_name 
-                    FROM test_sessions ts 
-                    LEFT JOIN tests t ON ts.test_id = t.id 
-                    LEFT JOIN users u ON ts.user_id = u.id 
-                    ORDER BY ts.created_at DESC 
-                    LIMIT :limit OFFSET :offset";
-            
-            $params = [':limit' => $limit, ':offset' => $offset];
-            return $this->db->fetchAll($sql, $params);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener todas las sesiones: " . $e->getMessage());
-        }
-    }
-    
-    public function count() {
-        try {
-            $sql = "SELECT COUNT(*) as total FROM test_sessions";
-            $result = $this->db->fetch($sql);
-            return $result['total'];
-        } catch (Exception $e) {
-            throw new Exception("Error al contar sesiones: " . $e->getMessage());
-        }
+    public function getTopScores($limit = 10) {
+        $sql = "SELECT ts.*, u.username, u.first_name, u.last_name
+                FROM test_sessions ts
+                JOIN users u ON ts.user_id = u.id
+                WHERE ts.passed = 1
+                ORDER BY ts.score DESC, ts.completed_at ASC
+                LIMIT ?";
+        
+        $stmt = $this->db->query($sql, [$limit]);
+        return $stmt->fetchAll();
     }
 }
 ?>

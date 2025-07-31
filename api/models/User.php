@@ -1,184 +1,142 @@
 <?php
-require_once __DIR__ . '/../includes/Database.php';
+/**
+ * Modelo de Usuario
+ */
+
+require_once 'api/config/database.php';
 
 class User {
     private $db;
     
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = new Database();
     }
     
     public function create($data) {
-        try {
-            $sql = "INSERT INTO users (username, email, password, first_name, last_name, role) 
-                    VALUES (:username, :email, :password, :first_name, :last_name, :role)";
-            
-            $params = [
-                ':username' => $data['username'],
-                ':email' => $data['email'],
-                ':password' => password_hash($data['password'], PASSWORD_DEFAULT),
-                ':first_name' => $data['first_name'],
-                ':last_name' => $data['last_name'],
-                ':role' => $data['role'] ?? 'user'
-            ];
-            
-            $this->db->query($sql, $params);
-            return $this->db->lastInsertId();
-        } catch (Exception $e) {
-            throw new Exception("Error al crear usuario: " . $e->getMessage());
-        }
+        $sql = "INSERT INTO users (username, email, password, first_name, last_name, role, lives) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        
+        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+        
+        $params = [
+            $data['username'],
+            $data['email'],
+            $hashedPassword,
+            $data['first_name'],
+            $data['last_name'],
+            $data['role'] ?? 'user',
+            $data['lives'] ?? 3
+        ];
+        
+        $this->db->query($sql, $params);
+        return $this->db->lastInsertId();
     }
     
     public function findByEmail($email) {
-        try {
-            $sql = "SELECT * FROM users WHERE email = :email AND is_active = 1";
-            return $this->db->fetch($sql, [':email' => $email]);
-        } catch (Exception $e) {
-            throw new Exception("Error al buscar usuario: " . $e->getMessage());
-        }
-    }
-    
-    public function findByUsername($username) {
-        try {
-            $sql = "SELECT * FROM users WHERE username = :username AND is_active = 1";
-            return $this->db->fetch($sql, [':username' => $username]);
-        } catch (Exception $e) {
-            throw new Exception("Error al buscar usuario: " . $e->getMessage());
-        }
+        $sql = "SELECT * FROM users WHERE email = ?";
+        $stmt = $this->db->query($sql, [$email]);
+        return $stmt->fetch();
     }
     
     public function findById($id) {
-        try {
-            $sql = "SELECT * FROM users WHERE id = :id AND is_active = 1";
-            return $this->db->fetch($sql, [':id' => $id]);
-        } catch (Exception $e) {
-            throw new Exception("Error al buscar usuario: " . $e->getMessage());
-        }
+        $sql = "SELECT * FROM users WHERE id = ?";
+        $stmt = $this->db->query($sql, [$id]);
+        return $stmt->fetch();
     }
     
     public function update($id, $data) {
-        try {
-            $sql = "UPDATE users SET 
-                    first_name = :first_name, 
-                    last_name = :last_name, 
-                    email = :email,
-                    updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id";
-            
-            $params = [
-                ':id' => $id,
-                ':first_name' => $data['first_name'],
-                ':last_name' => $data['last_name'],
-                ':email' => $data['email']
-            ];
-            
-            $this->db->query($sql, $params);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al actualizar usuario: " . $e->getMessage());
-        }
+        $sql = "UPDATE users SET 
+                username = ?, 
+                email = ?, 
+                first_name = ?, 
+                last_name = ?, 
+                lives = ?,
+                updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ?";
+        
+        $params = [
+            $data['username'],
+            $data['email'],
+            $data['first_name'],
+            $data['last_name'],
+            $data['lives'],
+            $id
+        ];
+        
+        return $this->db->query($sql, $params);
     }
     
-    public function updatePassword($id, $newPassword) {
-        try {
-            $sql = "UPDATE users SET password = :password WHERE id = :id";
-            $params = [
-                ':id' => $id,
-                ':password' => password_hash($newPassword, PASSWORD_DEFAULT)
-            ];
-            
-            $this->db->query($sql, $params);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al actualizar contraseña: " . $e->getMessage());
-        }
+    public function updateLives($id, $lives, $lostLife = false) {
+        $sql = "UPDATE users SET 
+                lives = ?, 
+                last_life_lost = " . ($lostLife ? "CURRENT_TIMESTAMP" : "NULL") . ",
+                updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ?";
+        
+        return $this->db->query($sql, [$lives, $id]);
     }
     
-    public function authenticate($email, $password) {
-        try {
-            $user = $this->findByEmail($email);
-            if (!$user) {
-                return false;
-            }
-            
-            if (password_verify($password, $user['password'])) {
-                unset($user['password']); // No devolver la contraseña
-                return $user;
-            }
-            
-            return false;
-        } catch (Exception $e) {
-            throw new Exception("Error en autenticación: " . $e->getMessage());
-        }
-    }
-    
-    public function getAll($page = 1, $limit = 10) {
-        try {
-            $offset = ($page - 1) * $limit;
-            $sql = "SELECT id, username, email, first_name, last_name, role, created_at 
-                    FROM users WHERE is_active = 1 
-                    ORDER BY created_at DESC 
-                    LIMIT :limit OFFSET :offset";
-            
-            $params = [':limit' => $limit, ':offset' => $offset];
-            return $this->db->fetchAll($sql, $params);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener usuarios: " . $e->getMessage());
-        }
-    }
-    
-    public function count() {
-        try {
-            $sql = "SELECT COUNT(*) as total FROM users WHERE is_active = 1";
-            $result = $this->db->fetch($sql);
-            return $result['total'];
-        } catch (Exception $e) {
-            throw new Exception("Error al contar usuarios: " . $e->getMessage());
-        }
+    public function getAll() {
+        $sql = "SELECT id, username, email, first_name, last_name, role, lives, last_life_lost, created_at FROM users ORDER BY created_at DESC";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
     }
     
     public function delete($id) {
-        try {
-            $sql = "UPDATE users SET is_active = 0 WHERE id = :id";
-            $this->db->query($sql, [':id' => $id]);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al eliminar usuario: " . $e->getMessage());
-        }
+        $sql = "DELETE FROM users WHERE id = ?";
+        return $this->db->query($sql, [$id]);
     }
     
-    public function emailExists($email, $excludeId = null) {
-        try {
-            $sql = "SELECT COUNT(*) as count FROM users WHERE email = :email AND is_active = 1";
-            $params = [':email' => $email];
+    public function getLivesWithRegeneration($userId) {
+        $user = $this->findById($userId);
+        if (!$user) return null;
+        
+        // Verificar si hay vidas perdidas que se pueden regenerar
+        if ($user['last_life_lost'] && $user['lives'] < 3) {
+            $lastLost = new DateTime($user['last_life_lost']);
+            $now = new DateTime();
+            $diff = $now->diff($lastLost);
+            $minutesPassed = ($diff->days * 24 * 60) + ($diff->h * 60) + $diff->i;
             
-            if ($excludeId) {
-                $sql .= " AND id != :exclude_id";
-                $params[':exclude_id'] = $excludeId;
+            // Obtener configuración de regeneración
+            $configSql = "SELECT value FROM system_config WHERE key_name = 'life_regeneration_minutes'";
+            $configStmt = $this->db->query($configSql);
+            $regenerationMinutes = $configStmt->fetch()['value'] ?? 5;
+            
+            if ($minutesPassed >= $regenerationMinutes) {
+                // Regenerar una vida
+                $newLives = min(3, $user['lives'] + 1);
+                $this->updateLives($userId, $newLives);
+                $user['lives'] = $newLives;
             }
-            
-            $result = $this->db->fetch($sql, $params);
-            return $result['count'] > 0;
-        } catch (Exception $e) {
-            throw new Exception("Error al verificar email: " . $e->getMessage());
         }
+        
+        return $user;
     }
     
-    public function usernameExists($username, $excludeId = null) {
-        try {
-            $sql = "SELECT COUNT(*) as count FROM users WHERE username = :username AND is_active = 1";
-            $params = [':username' => $username];
-            
-            if ($excludeId) {
-                $sql .= " AND id != :exclude_id";
-                $params[':exclude_id'] = $excludeId;
-            }
-            
-            $result = $this->db->fetch($sql, $params);
-            return $result['count'] > 0;
-        } catch (Exception $e) {
-            throw new Exception("Error al verificar username: " . $e->getMessage());
-        }
+    public function canTakeTest($userId) {
+        $user = $this->getLivesWithRegeneration($userId);
+        return $user && $user['lives'] > 0;
+    }
+    
+    public function loseLife($userId) {
+        $user = $this->findById($userId);
+        if (!$user || $user['lives'] <= 0) return false;
+        
+        $newLives = $user['lives'] - 1;
+        return $this->updateLives($userId, $newLives, true);
+    }
+    
+    public function getStats() {
+        $sql = "SELECT 
+                COUNT(*) as total_users,
+                COUNT(CASE WHEN role = 'admin' THEN 1 END) as total_admins,
+                COUNT(CASE WHEN role = 'user' THEN 1 END) as total_normal_users,
+                AVG(lives) as avg_lives
+                FROM users";
+        
+        $stmt = $this->db->query($sql);
+        return $stmt->fetch();
     }
 }
 ?>

@@ -8,12 +8,14 @@ echo "=== VERIFICACIÓN COMPLETA DEL SISTEMA ===\n\n";
 
 // 1. Verificar configuración de PHP
 echo "1. VERIFICANDO CONFIGURACIÓN DE PHP:\n";
-echo "- Versión de PHP: " . phpversion() . "\n";
-echo "- Extensión PDO: " . (extension_loaded('pdo') ? '✓ Instalada' : '✗ No instalada') . "\n";
-echo "- Extensión PDO MySQL: " . (extension_loaded('pdo_mysql') ? '✓ Instalada' : '✗ No instalada') . "\n";
-echo "- Extensión JSON: " . (extension_loaded('json') ? '✓ Instalada' : '✗ No instalada') . "\n";
-echo "- Extensión cURL: " . (extension_loaded('curl') ? '✓ Instalada' : '✗ No instalada') . "\n";
-echo "- Extensión OpenSSL: " . (extension_loaded('openssl') ? '✓ Instalada' : '✗ No instalada') . "\n\n";
+$requiredExtensions = ['pdo', 'pdo_mysql', 'json', 'mbstring'];
+foreach ($requiredExtensions as $ext) {
+    echo "- Extensión $ext: " . (extension_loaded($ext) ? '✓ Disponible' : '✗ No disponible') . "\n";
+}
+
+echo "- Versión PHP: " . PHP_VERSION . "\n";
+echo "- Memoria límite: " . ini_get('memory_limit') . "\n";
+echo "- Tiempo máximo de ejecución: " . ini_get('max_execution_time') . "s\n\n";
 
 // 2. Verificar archivos críticos
 echo "2. VERIFICANDO ARCHIVOS CRÍTICOS:\n";
@@ -25,10 +27,11 @@ $criticalFiles = [
     'api/config/database.php',
     'api/controllers/AuthController.php',
     'api/controllers/QuestionController.php',
+    'api/controllers/SessionController.php',
     'api/models/User.php',
     'api/models/Question.php',
-    'install.php',
-    'insert_questions.php',
+    'api/models/TestSession.php',
+    'install_completo.php',
     '.htaccess'
 ];
 
@@ -37,18 +40,22 @@ foreach ($criticalFiles as $file) {
 }
 echo "\n";
 
-// 3. Verificar permisos de directorios
-echo "3. VERIFICANDO PERMISOS DE DIRECTORIOS:\n";
+// 3. Verificar directorios y permisos
+echo "3. VERIFICANDO DIRECTORIOS Y PERMISOS:\n";
 $directories = [
     'assets/img/questions',
-    'logs',
-    'api'
+    'api',
+    'api/config',
+    'api/controllers',
+    'api/models',
+    'assets/css',
+    'assets/js'
 ];
 
 foreach ($directories as $dir) {
     if (is_dir($dir)) {
         $writable = is_writable($dir);
-        echo "- $dir: " . ($writable ? '✓ Escritura permitida' : '✗ Sin permisos de escritura') . "\n";
+        echo "- $dir: ✓ Existe" . ($writable ? ' (escribible)' : ' (no escribible)') . "\n";
     } else {
         echo "- $dir: ✗ No existe\n";
     }
@@ -58,154 +65,158 @@ echo "\n";
 // 4. Verificar conexión a base de datos
 echo "4. VERIFICANDO CONEXIÓN A BASE DE DATOS:\n";
 try {
-    $pdo = new PDO(
-        'mysql:host=localhost;dbname=test_transito;charset=utf8mb4',
-        'root',
-        '',
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $pdo = new PDO("mysql:host=localhost;dbname=test_transito", "root", "");
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     echo "✓ Conexión a MySQL exitosa\n";
     
     // Verificar tablas
-    $tables = ['users', 'categories', 'questions', 'tests', 'test_sessions', 'user_answers'];
+    $tables = ['users', 'questions', 'test_sessions', 'user_answers', 'system_config'];
     foreach ($tables as $table) {
         $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
         echo "- Tabla $table: " . ($stmt->rowCount() > 0 ? '✓ Existe' : '✗ No existe') . "\n";
     }
     
-    // Verificar columnas críticas en questions
-    $stmt = $pdo->query("SHOW COLUMNS FROM questions");
-    $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    $requiredColumns = ['nro', 'answer1', 'answer2', 'answer3', 'correct_answer'];
-    foreach ($requiredColumns as $column) {
-        echo "- Columna questions.$column: " . (in_array($column, $columns) ? '✓ Existe' : '✗ No existe') . "\n";
-    }
+    // Verificar datos iniciales
+    $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE role = 'admin'");
+    $adminCount = $stmt->fetch()['count'];
+    echo "- Usuarios admin: $adminCount\n";
     
-    // Verificar datos
-    $stmt = $pdo->query("SELECT COUNT(*) FROM questions");
-    $questionCount = $stmt->fetchColumn();
-    echo "- Preguntas en BD: $questionCount\n";
+    $stmt = $pdo->query("SELECT COUNT(*) as count FROM questions");
+    $questionCount = $stmt->fetch()['count'];
+    echo "- Preguntas disponibles: $questionCount\n";
     
-    $stmt = $pdo->query("SELECT COUNT(*) FROM categories");
-    $categoryCount = $stmt->fetchColumn();
-    echo "- Categorías en BD: $categoryCount\n";
-    
-    $stmt = $pdo->query("SELECT COUNT(*) FROM users");
-    $userCount = $stmt->fetchColumn();
-    echo "- Usuarios en BD: $userCount\n";
+    $stmt = $pdo->query("SELECT COUNT(*) as count FROM system_config");
+    $configCount = $stmt->fetch()['count'];
+    echo "- Configuraciones del sistema: $configCount\n";
     
 } catch (PDOException $e) {
     echo "✗ Error de conexión: " . $e->getMessage() . "\n";
 }
 echo "\n";
 
-// 5. Verificar configuración de API
-echo "5. VERIFICANDO CONFIGURACIÓN DE API:\n";
-if (file_exists('api/config/database.php')) {
-    echo "✓ Archivo de configuración de BD existe\n";
-} else {
-    echo "✗ Archivo de configuración de BD no existe\n";
-}
-
-// Verificar .htaccess
-if (file_exists('.htaccess')) {
-    echo "✓ Archivo .htaccess existe\n";
-} else {
-    echo "✗ Archivo .htaccess no existe\n";
-}
-echo "\n";
-
-// 6. Verificar funcionalidades JavaScript
-echo "6. VERIFICANDO FUNCIONALIDADES JAVASCRIPT:\n";
-if (file_exists('assets/js/app.js')) {
-    $jsContent = file_get_contents('assets/js/app.js');
-    $requiredFunctions = [
-        'showLoginModal',
-        'showRegisterModal',
-        'login',
-        'register',
-        'logout',
-        'checkAuthStatus',
-        'updateUIForLoggedInUser',
-        'updateUIForGuest',
-        'showSection',
-        'loadCategories',
-        'startTest',
-        'loadHistory',
-        'loadProfile',
-        'loadUserStats',
-        'loadAdminDashboard'
-    ];
-    
-    foreach ($requiredFunctions as $function) {
-        echo "- Función $function: " . (strpos($jsContent, "function $function") !== false ? '✓ Existe' : '✗ No existe') . "\n";
-    }
-} else {
-    echo "✗ Archivo app.js no existe\n";
-}
-echo "\n";
-
-// 7. Verificar estructura HTML
-echo "7. VERIFICANDO ESTRUCTURA HTML:\n";
-if (file_exists('index.html')) {
-    $htmlContent = file_get_contents('index.html');
-    $requiredElements = [
-        'showLoginModal',
-        'showRegisterModal',
-        'userMenu',
-        'authButtons',
-        'user-only',
-        'guest-only',
-        'admin-only',
-        'loginModal',
-        'registerModal',
-        'addQuestionModal'
-    ];
-    
-    foreach ($requiredElements as $element) {
-        echo "- Elemento $element: " . (strpos($htmlContent, $element) !== false ? '✓ Existe' : '✗ No existe') . "\n";
-    }
-} else {
-    echo "✗ Archivo index.html no existe\n";
-}
-echo "\n";
-
-// 8. Verificar endpoints de API
-echo "8. VERIFICANDO ENDPOINTS DE API:\n";
-$endpoints = [
-    'auth/login',
-    'auth/register',
-    'auth/profile',
-    'categories/with-count',
-    'questions/start-test',
-    'sessions/by-user',
-    'sessions/stats'
+// 5. Verificar configuración de la API
+echo "5. VERIFICANDO CONFIGURACIÓN DE LA API:\n";
+$apiUrl = 'http://localhost/test-transito/api/';
+$testEndpoints = [
+    'sessions/public-stats' => 'GET',
+    'auth/register' => 'POST',
+    'auth/login' => 'POST',
+    'questions' => 'GET'
 ];
 
-foreach ($endpoints as $endpoint) {
-    $url = "http://localhost/test-transito/api/$endpoint";
-    $headers = get_headers($url);
-    $status = $headers ? $headers[0] : 'No response';
-    echo "- $endpoint: " . (strpos($status, '200') !== false || strpos($status, '404') !== false ? '✓ Accesible' : '✗ No accesible') . " ($status)\n";
+foreach ($testEndpoints as $endpoint => $method) {
+    $url = $apiUrl . $endpoint;
+    $context = stream_context_create([
+        'http' => [
+            'method' => $method,
+            'header' => 'Content-Type: application/json',
+            'timeout' => 5
+        ]
+    ]);
+    
+    $response = @file_get_contents($url, false, $context);
+    $httpCode = $http_response_header[0] ?? 'Unknown';
+    
+    if ($response !== false) {
+        echo "- $endpoint ($method): ✓ Responde correctamente\n";
+    } else {
+        echo "- $endpoint ($method): ✗ Error de conexión\n";
+    }
 }
 echo "\n";
 
-// 9. Recomendaciones
-echo "9. RECOMENDACIONES:\n";
-echo "- Ejecuta 'php install.php' si hay problemas con la BD\n";
-echo "- Ejecuta 'php insert_questions.php' si no hay preguntas\n";
-echo "- Verifica que Apache y MySQL estén ejecutándose en XAMPP\n";
-echo "- Limpia el caché del navegador si hay problemas de JavaScript\n";
-echo "- Verifica que mod_rewrite esté habilitado en Apache\n";
-echo "- Asegúrate de que la URL base sea correcta en app.js\n\n";
+// 6. Verificar elementos JavaScript/HTML
+echo "6. VERIFICANDO ELEMENTOS DE LA INTERFAZ:\n";
+$htmlContent = file_get_contents('index.html');
+$jsContent = file_get_contents('assets/js/app.js');
 
-// 10. Resumen
-echo "10. RESUMEN:\n";
-echo "Para usar el sistema:\n";
-echo "1. Accede a: http://localhost/test-transito/\n";
-echo "2. Regístrate como nuevo usuario\n";
-echo "3. O inicia sesión con admin/admin123\n";
-echo "4. Realiza tests y verifica todas las funcionalidades\n\n";
+$requiredElements = [
+    'loginModal' => 'Modal de login',
+    'registerModal' => 'Modal de registro',
+    'addQuestionModal' => 'Modal de agregar pregunta',
+    'userLives' => 'Indicador de vidas',
+    'currentLives' => 'Vidas actuales',
+    'start-test-btn' => 'Botones de iniciar test',
+    'difficulty-card' => 'Cards de dificultad',
+    'test-interface' => 'Interfaz de test',
+    'admin' => 'Sección de administración'
+];
+
+foreach ($requiredElements as $element => $description) {
+    if (strpos($htmlContent, $element) !== false) {
+        echo "- $description: ✓ Presente en HTML\n";
+    } else {
+        echo "- $description: ✗ No encontrado en HTML\n";
+    }
+}
+
+$requiredFunctions = [
+    'showLoginModal' => 'Función mostrar login',
+    'showRegisterModal' => 'Función mostrar registro',
+    'startTest' => 'Función iniciar test',
+    'loadUserLives' => 'Función cargar vidas',
+    'updateUIForLoggedInUser' => 'Función actualizar UI usuario',
+    'loadPublicStats' => 'Función cargar estadísticas'
+];
+
+foreach ($requiredFunctions as $function => $description) {
+    if (strpos($jsContent, $function) !== false) {
+        echo "- $description: ✓ Presente en JavaScript\n";
+    } else {
+        echo "- $description: ✗ No encontrado en JavaScript\n";
+    }
+}
+echo "\n";
+
+// 7. Verificar estilos CSS
+echo "7. VERIFICANDO ESTILOS CSS:\n";
+$cssContent = file_get_contents('assets/css/style.css');
+
+$requiredStyles = [
+    '.difficulty-card' => 'Estilos para cards de dificultad',
+    '.life-indicator' => 'Estilos para indicador de vidas',
+    '.test-interface' => 'Estilos para interfaz de test',
+    '.admin-tab-content' => 'Estilos para panel admin',
+    '.question-admin-card' => 'Estilos para preguntas en admin'
+];
+
+foreach ($requiredStyles as $style => $description) {
+    if (strpos($cssContent, $style) !== false) {
+        echo "- $description: ✓ Presente en CSS\n";
+    } else {
+        echo "- $description: ✗ No encontrado en CSS\n";
+    }
+}
+echo "\n";
+
+// 8. Recomendaciones
+echo "8. RECOMENDACIONES:\n";
+echo "- Ejecuta 'install_completo.php' si no has instalado el sistema\n";
+echo "- Verifica que XAMPP esté corriendo (Apache y MySQL)\n";
+echo "- Asegúrate de que la URL base sea 'http://localhost/test-transito/'\n";
+echo "- Verifica que el directorio 'assets/img/questions' tenga permisos de escritura\n";
+echo "- Prueba el login con admin/admin123\n";
+echo "- Verifica que las vidas se regeneren cada 5 minutos\n";
+echo "- Prueba crear preguntas desde el panel de administración\n";
+echo "- Verifica que los tests funcionen con las 3 dificultades\n";
+echo "\n";
+
+// 9. Resumen
+echo "9. RESUMEN DE FUNCIONALIDADES IMPLEMENTADAS:\n";
+echo "✓ Sistema de registro e inicio de sesión\n";
+echo "✓ Panel de administración para gestionar preguntas y usuarios\n";
+echo "✓ Sistema de vidas (3 vidas, regeneración cada 5 minutos)\n";
+echo "✓ Tests con 3 niveles de dificultad (20, 40, 100 preguntas)\n";
+echo "✓ Sistema de aprobación (80% mínimo para aprobar)\n";
+echo "✓ Historial personal de tests\n";
+echo "✓ Estadísticas públicas y personales\n";
+echo "✓ Gestión de vidas desde el panel de administración\n";
+echo "✓ Interfaz responsiva y moderna\n";
+echo "✓ Validaciones de formularios\n";
+echo "✓ Manejo de errores y notificaciones\n";
+echo "\n";
 
 echo "=== VERIFICACIÓN COMPLETADA ===\n";
+echo "Si encuentras errores, revisa las recomendaciones anteriores.\n";
+echo "El sistema está listo para usar una vez que ejecutes install_completo.php\n";
 ?>

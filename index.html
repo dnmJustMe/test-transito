@@ -32,10 +32,10 @@
                         <a class="nav-link" href="#home">Inicio</a>
                     </li>
                     <li class="nav-item user-only" style="display: none;">
-                        <a class="nav-link" href="#tests">Tests</a>
+                        <a class="nav-link" href="#tests">Realizar Test</a>
                     </li>
                     <li class="nav-item user-only" style="display: none;">
-                        <a class="nav-link" href="#history">Historial</a>
+                        <a class="nav-link" href="#history">Mi Historial</a>
                     </li>
                     <li class="nav-item user-only" style="display: none;">
                         <a class="nav-link" href="#profile">Mi Perfil</a>
@@ -60,6 +60,7 @@
                     <div class="dropdown">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> <span id="userName">Usuario</span>
+                            <span class="badge bg-warning ms-1" id="userLives">3</span>
                         </button>
                         <ul class="dropdown-menu">
                             <li><span class="dropdown-item-text"><small id="userRole">Usuario</small></span></li>
@@ -90,32 +91,77 @@
                         Practica y mejora tus conocimientos sobre las normas de tránsito con nuestro sistema de tests interactivo.
                     </p>
                     
-                    <!-- Estadísticas -->
+                    <!-- Estadísticas Públicas -->
                     <div class="row mb-5">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card text-center">
                                 <div class="card-body">
-                                    <i class="bi bi-collection text-primary" style="font-size: 2rem;"></i>
-                                    <h5 class="card-title mt-2">Categorías</h5>
-                                    <h3 class="text-primary" id="totalCategories">20</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <i class="bi bi-question-circle text-success" style="font-size: 2rem;"></i>
-                                    <h5 class="card-title mt-2">Preguntas</h5>
-                                    <h3 class="text-success" id="totalQuestions">100</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <i class="bi bi-people text-info" style="font-size: 2rem;"></i>
+                                    <i class="bi bi-people text-primary" style="font-size: 2rem;"></i>
                                     <h5 class="card-title mt-2">Usuarios</h5>
-                                    <h3 class="text-info" id="totalUsers">100+</h3>
+                                    <h3 class="text-primary" id="totalUsers">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-clipboard-check text-success" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Tests Realizados</h5>
+                                    <h3 class="text-success" id="totalTests">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-question-circle text-info" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Preguntas</h5>
+                                    <h3 class="text-info" id="totalQuestions">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-trophy text-warning" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Promedio</h5>
+                                    <h3 class="text-warning" id="averageScore">0%</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Información del Sistema -->
+                    <div class="row mb-5">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-info-circle text-primary"></i> ¿Cómo Funciona?
+                                    </h5>
+                                    <ul class="list-unstyled">
+                                        <li><i class="bi bi-check-circle text-success"></i> Registra tu cuenta</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Elige la dificultad del test</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Responde las preguntas</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Aproba con 80% o más</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Gestiona tus vidas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-heart text-danger"></i> Sistema de Vidas
+                                    </h5>
+                                    <ul class="list-unstyled">
+                                        <li><i class="bi bi-heart-fill text-danger"></i> 3 vidas por defecto</li>
+                                        <li><i class="bi bi-heart-fill text-danger"></i> Pierdes 1 vida por test desaprobado</li>
+                                        <li><i class="bi bi-clock text-warning"></i> Regeneración cada 5 minutos</li>
+                                        <li><i class="bi bi-x-circle text-danger"></i> Sin vidas = no puedes hacer tests</li>
+                                        <li><i class="bi bi-shield-check text-success"></i> Los admins pueden agregar vidas</li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -139,9 +185,59 @@
 
         <!-- Sección Tests -->
         <section id="tests" class="section" style="display: none;">
-            <h2 class="text-center mb-4">Categorías de Tests</h2>
-            <div id="categoriesContainer" class="row">
-                <!-- Las categorías se cargarán dinámicamente -->
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="text-center mb-4">Realizar Test</h2>
+                    
+                    <!-- Información de vidas -->
+                    <div class="alert alert-info text-center mb-4">
+                        <i class="bi bi-heart-fill text-danger"></i>
+                        <strong>Vidas disponibles:</strong> <span id="currentLives">3</span>
+                        <div id="lifeRegenerationInfo" class="small mt-2" style="display: none;">
+                            <i class="bi bi-clock"></i> Próxima regeneración en: <span id="regenerationTime">--</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Selección de dificultad -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card text-center difficulty-card" data-difficulty="easy">
+                                <div class="card-body">
+                                    <i class="bi bi-star text-success" style="font-size: 3rem;"></i>
+                                    <h5 class="card-title mt-2">Fácil</h5>
+                                    <p class="card-text">20 preguntas</p>
+                                    <button class="btn btn-success start-test-btn" data-difficulty="easy">
+                                        Iniciar Test Fácil
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card text-center difficulty-card" data-difficulty="medium">
+                                <div class="card-body">
+                                    <i class="bi bi-star-fill text-warning" style="font-size: 3rem;"></i>
+                                    <h5 class="card-title mt-2">Medio</h5>
+                                    <p class="card-text">40 preguntas</p>
+                                    <button class="btn btn-warning start-test-btn" data-difficulty="medium">
+                                        Iniciar Test Medio
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card text-center difficulty-card" data-difficulty="hard">
+                                <div class="card-body">
+                                    <i class="bi bi-star-fill text-danger" style="font-size: 3rem;"></i>
+                                    <h5 class="card-title mt-2">Difícil</h5>
+                                    <p class="card-text">100 preguntas</p>
+                                    <button class="btn btn-danger start-test-btn" data-difficulty="hard">
+                                        Iniciar Test Difícil
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -317,16 +413,8 @@
                 <div class="col-md-3">
                     <div class="card text-center">
                         <div class="card-body">
-                            <h5 class="card-title">Total Categorías</h5>
-                            <h3 class="text-success" id="adminTotalCategories">0</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
                             <h5 class="card-title">Total Usuarios</h5>
-                            <h3 class="text-info" id="adminTotalUsers">0</h3>
+                            <h3 class="text-success" id="adminTotalUsers">0</h3>
                         </div>
                     </div>
                 </div>
@@ -334,34 +422,82 @@
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">Total Tests</h5>
-                            <h3 class="text-warning" id="adminTotalTests">0</h3>
+                            <h3 class="text-info" id="adminTotalTests">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Promedio Global</h5>
+                            <h3 class="text-warning" id="adminAverageScore">0%</h3>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Tabla de categorías -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Categorías</h5>
-                    <button class="btn btn-primary btn-sm" onclick="showAddCategoryModal()">
-                        <i class="bi bi-plus-circle"></i> Agregar Categoría
+            <!-- Tabs de administración -->
+            <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab">
+                        <i class="bi bi-question-circle"></i> Preguntas
                     </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
+                        <i class="bi bi-people"></i> Usuarios
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-admin" type="button" role="tab">
+                        <i class="bi bi-graph-up"></i> Estadísticas
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="adminTabContent">
+                <!-- Tab Preguntas -->
+                <div class="tab-pane fade show active" id="questions" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Gestionar Preguntas</h5>
+                            <button class="btn btn-primary btn-sm" onclick="showAddQuestionModal()">
+                                <i class="bi bi-plus-circle"></i> Agregar Pregunta
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="questionsContainer">
+                                <!-- Las preguntas se cargarán dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Preguntas</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminContainer">
-                                <!-- Las categorías se cargarán dinámicamente -->
-                            </tbody>
-                        </table>
+                
+                <!-- Tab Usuarios -->
+                <div class="tab-pane fade" id="users" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Gestionar Usuarios</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="usersContainer">
+                                <!-- Los usuarios se cargarán dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab Estadísticas -->
+                <div class="tab-pane fade" id="stats-admin" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Estadísticas del Sistema</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="adminStatsContainer">
+                                <!-- Las estadísticas se cargarán dinámicamente -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -450,18 +586,6 @@
                 </div>
                 <div class="modal-body">
                     <form id="addQuestionForm">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="questionCategory" class="form-label">Categoría</label>
-                                <select class="form-select" id="questionCategory" required>
-                                    <option value="">Seleccionar categoría...</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="questionNro" class="form-label">Número (NRO)</label>
-                                <input type="number" class="form-control" id="questionNro" required>
-                            </div>
-                        </div>
                         <div class="mb-3">
                             <label for="questionText" class="form-label">Pregunta</label>
                             <textarea class="form-control" id="questionText" rows="3" required></textarea>
@@ -499,8 +623,8 @@
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="questionArticle" class="form-label">Referencia de Artículo</label>
-                                <input type="text" class="form-control" id="questionArticle">
+                                <label for="questionImage" class="form-label">Imagen (opcional)</label>
+                                <input type="file" class="form-control" id="questionImage" accept="image/*">
                             </div>
                         </div>
                         <div class="d-grid">
@@ -530,33 +654,8 @@
             $('#registerModal').modal('show');
         }
         
-        function showAddCategoryModal() {
-            Swal.fire({
-                title: 'Agregar Categoría',
-                html: `
-                    <input id="categoryName" class="swal2-input" placeholder="Nombre de la categoría">
-                    <textarea id="categoryDescription" class="swal2-textarea" placeholder="Descripción (opcional)"></textarea>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Agregar',
-                cancelButtonText: 'Cancelar',
-                preConfirm: () => {
-                    const name = document.getElementById('categoryName').value;
-                    const description = document.getElementById('categoryDescription').value;
-                    
-                    if (!name) {
-                        Swal.showValidationMessage('El nombre es requerido');
-                        return false;
-                    }
-                    
-                    return { name, description };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Aquí se puede implementar la lógica para agregar categoría
-                    Swal.fire('Éxito', 'Categoría agregada correctamente', 'success');
-                }
-            });
+        function showAddQuestionModal() {
+            $('#addQuestionModal').modal('show');
         }
     </script>
 </body>

@@ -1,22 +1,24 @@
 RewriteEngine On
 
 # Redirigir todas las peticiones de la API a api/index.php
-RewriteRule ^api/(.*)$ api/index.php [QSA,L]
-
-# Redirigir todas las demás peticiones al frontend
+RewriteCond %{REQUEST_URI} ^/test-transito/api/
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.html [QSA,L]
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+# Permitir acceso directo a archivos estáticos
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^(.*)$ $1 [L]
+
+# Redirigir todo lo demás a index.html (SPA)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.html [L]
 
 # Configuración de seguridad
-<Files "*.sql">
-    Order allow,deny
-    Deny from all
-</Files>
-
-<Files "*.log">
-    Order allow,deny
-    Deny from all
+<Files "*.php">
+    Order Allow,Deny
+    Allow from all
 </Files>
 
 # Configuración de caché para archivos estáticos
@@ -28,7 +30,6 @@ RewriteRule ^(.*)$ index.html [QSA,L]
     ExpiresByType image/jpg "access plus 1 month"
     ExpiresByType image/jpeg "access plus 1 month"
     ExpiresByType image/gif "access plus 1 month"
-    ExpiresByType image/svg+xml "access plus 1 month"
 </IfModule>
 
 # Compresión GZIP

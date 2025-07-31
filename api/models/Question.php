@@ -1,178 +1,140 @@
 <?php
-require_once __DIR__ . '/../includes/Database.php';
+/**
+ * Modelo de Preguntas
+ */
+
+require_once 'api/config/database.php';
 
 class Question {
     private $db;
     
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = new Database();
     }
     
     public function create($data) {
-        $sql = "INSERT INTO questions (category_id, nro, question_text, answer1, answer2, answer3, correct_answer, article_reference, image_path) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $imagePath = null;
-        if (isset($data['nro'])) {
-            $imagePath = "assets/img/questions/i{$data['nro']}.png";
-        }
+        $sql = "INSERT INTO questions (question_text, answer1, answer2, answer3, correct_answer, image_path) 
+                VALUES (?, ?, ?, ?, ?, ?)";
         
         $params = [
-            $data['category_id'],
-            $data['nro'],
             $data['question_text'],
             $data['answer1'],
             $data['answer2'],
             $data['answer3'],
             $data['correct_answer'],
-            $data['article_reference'] ?? null,
-            $imagePath
+            $data['image_path'] ?? null
         ];
         
-        return $this->db->query($sql, $params);
+        $this->db->query($sql, $params);
+        return $this->db->lastInsertId();
     }
     
     public function findById($id) {
-        $sql = "SELECT q.*, c.name as category_name 
-                FROM questions q 
-                LEFT JOIN categories c ON q.category_id = c.id 
-                WHERE q.id = ? AND q.deleted_at IS NULL";
-        return $this->db->fetch($sql, [$id]);
+        $sql = "SELECT * FROM questions WHERE id = ?";
+        $stmt = $this->db->query($sql, [$id]);
+        return $stmt->fetch();
     }
     
     public function update($id, $data) {
         $sql = "UPDATE questions SET 
-                category_id = ?, 
-                nro = ?, 
                 question_text = ?, 
                 answer1 = ?, 
                 answer2 = ?, 
                 answer3 = ?, 
                 correct_answer = ?, 
-                article_reference = ?, 
                 image_path = ?,
                 updated_at = CURRENT_TIMESTAMP 
                 WHERE id = ?";
         
-        $imagePath = null;
-        if (isset($data['nro'])) {
-            $imagePath = "assets/img/questions/i{$data['nro']}.png";
-        }
-        
         $params = [
-            $data['category_id'],
-            $data['nro'],
             $data['question_text'],
             $data['answer1'],
             $data['answer2'],
             $data['answer3'],
             $data['correct_answer'],
-            $data['article_reference'] ?? null,
-            $imagePath,
+            $data['image_path'] ?? null,
             $id
         ];
         
         return $this->db->query($sql, $params);
     }
     
-    public function getAll($page = 1, $limit = 20, $categoryId = null) {
-        $offset = ($page - 1) * $limit;
-        
-        $whereClause = "WHERE q.deleted_at IS NULL";
-        $params = [];
-        
-        if ($categoryId) {
-            $whereClause .= " AND q.category_id = ?";
-            $params[] = $categoryId;
-        }
-        
-        $sql = "SELECT q.*, c.name as category_name 
-                FROM questions q 
-                LEFT JOIN categories c ON q.category_id = c.id 
-                $whereClause 
-                ORDER BY q.id DESC 
-                LIMIT ? OFFSET ?";
-        
-        $params[] = $limit;
-        $params[] = $offset;
-        
-        return $this->db->fetchAll($sql, $params);
-    }
-    
-    public function getRandomQuestions($categoryId = null, $limit = 20) {
-        $whereClause = "WHERE q.deleted_at IS NULL";
-        $params = [];
-        
-        if ($categoryId) {
-            $whereClause .= " AND q.category_id = ?";
-            $params[] = $categoryId;
-        }
-        
-        $sql = "SELECT q.*, c.name as category_name 
-                FROM questions q 
-                LEFT JOIN categories c ON q.category_id = c.id 
-                $whereClause 
-                ORDER BY RAND() 
-                LIMIT ?";
-        
-        $params[] = $limit;
-        
-        return $this->db->fetchAll($sql, $params);
-    }
-    
-    public function count($categoryId = null) {
-        $whereClause = "WHERE deleted_at IS NULL";
-        $params = [];
-        
-        if ($categoryId) {
-            $whereClause .= " AND category_id = ?";
-            $params[] = $categoryId;
-        }
-        
-        $sql = "SELECT COUNT(*) as total FROM questions $whereClause";
-        $result = $this->db->fetch($sql, $params);
-        return $result['total'];
-    }
-    
     public function delete($id) {
-        $sql = "UPDATE questions SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?";
+        $sql = "DELETE FROM questions WHERE id = ?";
         return $this->db->query($sql, [$id]);
     }
     
-    public function getByCategory($categoryId) {
-        $sql = "SELECT * FROM questions WHERE category_id = ? AND deleted_at IS NULL ORDER BY id";
-        return $this->db->fetchAll($sql, [$categoryId]);
+    public function getAll($page = 1, $limit = 20) {
+        $offset = ($page - 1) * $limit;
+        $sql = "SELECT * FROM questions ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $stmt = $this->db->query($sql, [$limit, $offset]);
+        return $stmt->fetchAll();
+    }
+    
+    public function getRandomQuestions($count) {
+        $sql = "SELECT * FROM questions ORDER BY RAND() LIMIT ?";
+        $stmt = $this->db->query($sql, [$count]);
+        return $stmt->fetchAll();
+    }
+    
+    public function count() {
+        $sql = "SELECT COUNT(*) as total FROM questions";
+        $stmt = $this->db->query($sql);
+        $result = $stmt->fetch();
+        return $result['total'];
+    }
+    
+    public function getStats() {
+        $sql = "SELECT 
+                COUNT(*) as total_questions,
+                COUNT(CASE WHEN image_path IS NOT NULL THEN 1 END) as questions_with_images,
+                COUNT(CASE WHEN image_path IS NULL THEN 1 END) as questions_without_images
+                FROM questions";
+        
+        $stmt = $this->db->query($sql);
+        return $stmt->fetch();
     }
     
     public function search($term) {
-        $sql = "SELECT q.*, c.name as category_name 
-                FROM questions q 
-                LEFT JOIN categories c ON q.category_id = c.id 
-                WHERE (q.question_text LIKE ? OR q.answer1 LIKE ? OR q.answer2 LIKE ? OR q.answer3 LIKE ?) 
-                AND q.deleted_at IS NULL 
-                ORDER BY q.id DESC";
+        $sql = "SELECT * FROM questions 
+                WHERE question_text LIKE ? OR answer1 LIKE ? OR answer2 LIKE ? OR answer3 LIKE ? 
+                ORDER BY created_at DESC";
         
         $searchTerm = "%$term%";
-        $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
-        
-        return $this->db->fetchAll($sql, $params);
+        $stmt = $this->db->query($sql, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+        return $stmt->fetchAll();
     }
     
-    public function getImagePath($nro) {
-        $imagePath = "assets/img/questions/i{$nro}.png";
-        $fullPath = __DIR__ . "/../../{$imagePath}";
-        
-        if (file_exists($fullPath)) {
-            return $imagePath;
+    public function uploadImage($questionId, $imageFile) {
+        $uploadDir = 'assets/img/questions/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
         }
         
-        return null;
+        $fileName = 'q' . $questionId . '_' . time() . '.png';
+        $filePath = $uploadDir . $fileName;
+        
+        if (move_uploaded_file($imageFile['tmp_name'], $filePath)) {
+            $sql = "UPDATE questions SET image_path = ? WHERE id = ?";
+            $this->db->query($sql, [$filePath, $questionId]);
+            return $filePath;
+        }
+        
+        return false;
     }
     
-    public function updateImagePath($id, $nro) {
-        $imagePath = "assets/img/questions/i{$nro}.png";
-        $sql = "UPDATE questions SET image_path = ? WHERE id = ?";
-        return $this->db->query($sql, [$imagePath, $id]);
+    public function deleteImage($questionId) {
+        $question = $this->findById($questionId);
+        if ($question && $question['image_path']) {
+            if (file_exists($question['image_path'])) {
+                unlink($question['image_path']);
+            }
+            
+            $sql = "UPDATE questions SET image_path = NULL WHERE id = ?";
+            return $this->db->query($sql, [$questionId]);
+        }
+        
+        return false;
     }
 }
 ?>

@@ -1,33 +1,36 @@
 <?php
-require_once __DIR__ . '/config/config.php';
+/**
+ * API Principal - Enrutador
+ */
 
-// Manejar preflight requests
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
+    exit(0);
 }
 
 // Obtener la URL y método
 $requestUri = $_SERVER['REQUEST_URI'];
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-// Remover la base path de la URL
+// Remover la base path
 $basePath = '/test-transito/api/';
 $path = str_replace($basePath, '', $requestUri);
-$path = parse_url($path, PHP_URL_PATH);
+$path = strtok($path, '?'); // Remover query string
 
-// Dividir la ruta en segmentos
-$segments = array_filter(explode('/', $path));
-
-// Determinar el controlador y acción
-$controller = isset($segments[0]) ? $segments[0] : '';
-$action = isset($segments[1]) ? $segments[1] : '';
-$id = isset($segments[2]) ? $segments[2] : null;
+// Dividir la ruta en partes
+$pathParts = explode('/', trim($path, '/'));
+$controller = $pathParts[0] ?? '';
+$action = $pathParts[1] ?? '';
+$id = $pathParts[2] ?? null;
 
 try {
     switch ($controller) {
         case 'auth':
-            require_once __DIR__ . '/controllers/AuthController.php';
+            require_once 'api/controllers/AuthController.php';
             $authController = new AuthController();
             
             switch ($action) {
@@ -52,14 +55,7 @@ try {
                 case 'profile':
                     if ($requestMethod === 'GET') {
                         $authController->profile();
-                    } else {
-                        http_response_code(405);
-                        echo json_encode(['error' => 'Método no permitido']);
-                    }
-                    break;
-                    
-                case 'update-profile':
-                    if ($requestMethod === 'PUT') {
+                    } elseif ($requestMethod === 'PUT') {
                         $authController->updateProfile();
                     } else {
                         http_response_code(405);
@@ -67,9 +63,18 @@ try {
                     }
                     break;
                     
-                case 'change-password':
-                    if ($requestMethod === 'PUT') {
-                        $authController->changePassword();
+                case 'lives':
+                    if ($requestMethod === 'GET') {
+                        $authController->getLives();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode(['error' => 'Método no permitido']);
+                    }
+                    break;
+                    
+                case 'add-lives':
+                    if ($requestMethod === 'POST') {
+                        $authController->addLives();
                     } else {
                         http_response_code(405);
                         echo json_encode(['error' => 'Método no permitido']);
@@ -84,31 +89,15 @@ try {
             break;
             
         case 'questions':
-            require_once __DIR__ . '/controllers/QuestionController.php';
+            require_once 'api/controllers/QuestionController.php';
             $questionController = new QuestionController();
             
             switch ($action) {
                 case '':
                     if ($requestMethod === 'GET') {
                         $questionController->getAll();
-                    } else {
-                        http_response_code(405);
-                        echo json_encode(['error' => 'Método no permitido']);
-                    }
-                    break;
-                    
-                case 'random':
-                    if ($requestMethod === 'GET') {
-                        $questionController->getRandomQuestions();
-                    } else {
-                        http_response_code(405);
-                        echo json_encode(['error' => 'Método no permitido']);
-                    }
-                    break;
-                    
-                case 'search':
-                    if ($requestMethod === 'GET') {
-                        $questionController->search();
+                    } elseif ($requestMethod === 'POST') {
+                        $questionController->create();
                     } else {
                         http_response_code(405);
                         echo json_encode(['error' => 'Método no permitido']);
@@ -124,18 +113,27 @@ try {
                     }
                     break;
                     
-                case 'submit-answer':
+                case 'finish-test':
                     if ($requestMethod === 'POST') {
-                        $questionController->submitAnswer();
+                        $questionController->finishTest();
                     } else {
                         http_response_code(405);
                         echo json_encode(['error' => 'Método no permitido']);
                     }
                     break;
                     
-                case 'finish-test':
-                    if ($requestMethod === 'POST' && $id) {
-                        $questionController->finishTest($id);
+                case 'stats':
+                    if ($requestMethod === 'GET') {
+                        $questionController->getStats();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode(['error' => 'Método no permitido']);
+                    }
+                    break;
+                    
+                case 'search':
+                    if ($requestMethod === 'GET') {
+                        $questionController->search();
                     } else {
                         http_response_code(405);
                         echo json_encode(['error' => 'Método no permitido']);
@@ -151,49 +149,9 @@ try {
                     }
                     break;
                     
-                default:
-                    if (is_numeric($action)) {
-                        $id = $action;
-                        switch ($requestMethod) {
-                            case 'GET':
-                                $questionController->getById($id);
-                                break;
-                            case 'PUT':
-                                $questionController->update($id);
-                                break;
-                            case 'DELETE':
-                                $questionController->delete($id);
-                                break;
-                            default:
-                                http_response_code(405);
-                                echo json_encode(['error' => 'Método no permitido']);
-                                break;
-                        }
-                    } else {
-                        http_response_code(404);
-                        echo json_encode(['error' => 'Endpoint no encontrado']);
-                    }
-                    break;
-            }
-            break;
-            
-        case 'categories':
-            require_once __DIR__ . '/controllers/CategoryController.php';
-            $categoryController = new CategoryController();
-            
-            switch ($action) {
-                case '':
-                    if ($requestMethod === 'GET') {
-                        $categoryController->getAll();
-                    } else {
-                        http_response_code(405);
-                        echo json_encode(['error' => 'Método no permitido']);
-                    }
-                    break;
-                    
-                case 'with-count':
-                    if ($requestMethod === 'GET') {
-                        $categoryController->getWithQuestionCount();
+                case 'delete-image':
+                    if ($requestMethod === 'DELETE' && $id) {
+                        $questionController->deleteImage($id);
                     } else {
                         http_response_code(405);
                         echo json_encode(['error' => 'Método no permitido']);
@@ -203,20 +161,15 @@ try {
                 default:
                     if (is_numeric($action)) {
                         $id = $action;
-                        switch ($requestMethod) {
-                            case 'GET':
-                                $categoryController->getById($id);
-                                break;
-                            case 'PUT':
-                                $categoryController->update($id);
-                                break;
-                            case 'DELETE':
-                                $categoryController->delete($id);
-                                break;
-                            default:
-                                http_response_code(405);
-                                echo json_encode(['error' => 'Método no permitido']);
-                                break;
+                        if ($requestMethod === 'GET') {
+                            $questionController->getById($id);
+                        } elseif ($requestMethod === 'PUT') {
+                            $questionController->update($id);
+                        } elseif ($requestMethod === 'DELETE') {
+                            $questionController->delete($id);
+                        } else {
+                            http_response_code(405);
+                            echo json_encode(['error' => 'Método no permitido']);
                         }
                     } else {
                         http_response_code(404);
@@ -227,11 +180,11 @@ try {
             break;
             
         case 'sessions':
-            require_once __DIR__ . '/controllers/TestSessionController.php';
-            $sessionController = new TestSessionController();
+            require_once 'api/controllers/SessionController.php';
+            $sessionController = new SessionController();
             
             switch ($action) {
-                case '':
+                case 'by-user':
                     if ($requestMethod === 'GET') {
                         $sessionController->getByUser();
                     } else {
@@ -249,27 +202,36 @@ try {
                     }
                     break;
                     
-                case 'in-progress':
+                case 'global-stats':
                     if ($requestMethod === 'GET') {
-                        $sessionController->getInProgress();
+                        $sessionController->getGlobalStats();
                     } else {
                         http_response_code(405);
                         echo json_encode(['error' => 'Método no permitido']);
                     }
                     break;
                     
-                case 'all':
+                case 'recent':
                     if ($requestMethod === 'GET') {
-                        $sessionController->getAll();
+                        $sessionController->getRecentTests();
                     } else {
                         http_response_code(405);
                         echo json_encode(['error' => 'Método no permitido']);
                     }
                     break;
                     
-                case 'stats-by-category':
-                    if ($requestMethod === 'GET' && $id) {
-                        $sessionController->getStatsByCategory($id);
+                case 'top-scores':
+                    if ($requestMethod === 'GET') {
+                        $sessionController->getTopScores();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode(['error' => 'Método no permitido']);
+                    }
+                    break;
+                    
+                case 'public-stats':
+                    if ($requestMethod === 'GET') {
+                        $sessionController->getPublicStats();
                     } else {
                         http_response_code(405);
                         echo json_encode(['error' => 'Método no permitido']);
@@ -278,9 +240,11 @@ try {
                     
                 default:
                     if (is_numeric($action)) {
-                        $id = $action;
+                        $sessionId = $action;
                         if ($requestMethod === 'GET') {
-                            $sessionController->getById($id);
+                            $sessionController->getSessionDetails($sessionId);
+                        } elseif ($requestMethod === 'DELETE') {
+                            $sessionController->deleteSession($sessionId);
                         } else {
                             http_response_code(405);
                             echo json_encode(['error' => 'Método no permitido']);
@@ -289,6 +253,56 @@ try {
                         http_response_code(404);
                         echo json_encode(['error' => 'Endpoint no encontrado']);
                     }
+                    break;
+            }
+            break;
+            
+        case 'admin':
+            require_once 'api/controllers/AuthController.php';
+            require_once 'api/controllers/QuestionController.php';
+            require_once 'api/controllers/SessionController.php';
+            
+            $authController = new AuthController();
+            $questionController = new QuestionController();
+            $sessionController = new SessionController();
+            
+            switch ($action) {
+                case 'users':
+                    if ($requestMethod === 'GET') {
+                        // Obtener todos los usuarios (solo admin)
+                        $user = $authController->getCurrentUser();
+                        if (!$user || $user['role'] !== 'admin') {
+                            http_response_code(401);
+                            echo json_encode(['error' => 'No autorizado']);
+                            exit;
+                        }
+                        
+                        require_once 'api/models/User.php';
+                        $userModel = new User();
+                        $users = $userModel->getAll();
+                        
+                        echo json_encode([
+                            'success' => true,
+                            'data' => $users
+                        ]);
+                    } else {
+                        http_response_code(405);
+                        echo json_encode(['error' => 'Método no permitido']);
+                    }
+                    break;
+                    
+                case 'stats':
+                    if ($requestMethod === 'GET') {
+                        $sessionController->getGlobalStats();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode(['error' => 'Método no permitido']);
+                    }
+                    break;
+                    
+                default:
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Endpoint no encontrado']);
                     break;
             }
             break;
