@@ -58,7 +58,7 @@ try {
         deleted_at TIMESTAMP NULL
     )");
     
-    // Tabla questions
+    // Tabla questions - Crear si no existe
     $pdo->exec("CREATE TABLE IF NOT EXISTS questions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         category_id INT,
@@ -75,6 +75,45 @@ try {
         deleted_at TIMESTAMP NULL,
         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
     )");
+    
+    // Verificar si la tabla questions existe y agregar campo nro si no existe
+    $stmt = $pdo->query("SHOW TABLES LIKE 'questions'");
+    if ($stmt->rowCount() > 0) {
+        // Verificar si el campo nro existe
+        $stmt = $pdo->query("SHOW COLUMNS FROM questions LIKE 'nro'");
+        if ($stmt->rowCount() == 0) {
+            echo "Agregando campo 'nro' a la tabla questions...\n";
+            $pdo->exec("ALTER TABLE questions ADD COLUMN nro INT NOT NULL DEFAULT 0 AFTER category_id");
+            echo "✓ Campo 'nro' agregado\n";
+        }
+        
+        // Verificar si los campos answer1, answer2, answer3 existen
+        $stmt = $pdo->query("SHOW COLUMNS FROM questions LIKE 'answer1'");
+        if ($stmt->rowCount() == 0) {
+            echo "Actualizando estructura de respuestas...\n";
+            // Renombrar campos si existen como option_a, option_b, option_c
+            $stmt = $pdo->query("SHOW COLUMNS FROM questions LIKE 'option_a'");
+            if ($stmt->rowCount() > 0) {
+                $pdo->exec("ALTER TABLE questions CHANGE option_a answer1 VARCHAR(255) NOT NULL");
+                $pdo->exec("ALTER TABLE questions CHANGE option_b answer2 VARCHAR(255) NOT NULL");
+                $pdo->exec("ALTER TABLE questions CHANGE option_c answer3 VARCHAR(255) NOT NULL");
+            } else {
+                // Agregar campos si no existen
+                $pdo->exec("ALTER TABLE questions ADD COLUMN answer1 VARCHAR(255) NOT NULL AFTER question_text");
+                $pdo->exec("ALTER TABLE questions ADD COLUMN answer2 VARCHAR(255) NOT NULL AFTER answer1");
+                $pdo->exec("ALTER TABLE questions ADD COLUMN answer3 VARCHAR(255) NOT NULL AFTER answer2");
+            }
+            echo "✓ Campos de respuestas actualizados\n";
+        }
+        
+        // Verificar campo article_reference
+        $stmt = $pdo->query("SHOW COLUMNS FROM questions LIKE 'article_reference'");
+        if ($stmt->rowCount() == 0) {
+            echo "Agregando campo 'article_reference'...\n";
+            $pdo->exec("ALTER TABLE questions ADD COLUMN article_reference VARCHAR(20) AFTER correct_answer");
+            echo "✓ Campo 'article_reference' agregado\n";
+        }
+    }
     
     // Tabla tests
     $pdo->exec("CREATE TABLE IF NOT EXISTS tests (
@@ -133,7 +172,7 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
     
-    echo "✓ Tablas creadas\n\n";
+    echo "✓ Tablas creadas/actualizadas\n\n";
 
     // 5. Crear usuario admin
     echo "4. Creando usuario administrador...\n";
