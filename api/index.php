@@ -30,7 +30,7 @@ $id = $pathParts[2] ?? null;
 try {
     switch ($controller) {
         case 'auth':
-            require_once 'api/controllers/AuthController.php';
+            require_once 'controllers/AuthController.php';
             $authController = new AuthController();
             
             switch ($action) {
@@ -89,7 +89,7 @@ try {
             break;
             
         case 'questions':
-            require_once 'api/controllers/QuestionController.php';
+            require_once 'controllers/QuestionController.php';
             $questionController = new QuestionController();
             
             switch ($action) {
@@ -180,7 +180,7 @@ try {
             break;
             
         case 'sessions':
-            require_once 'api/controllers/SessionController.php';
+            require_once 'controllers/SessionController.php';
             $sessionController = new SessionController();
             
             switch ($action) {
@@ -258,9 +258,9 @@ try {
             break;
             
         case 'admin':
-            require_once 'api/controllers/AuthController.php';
-            require_once 'api/controllers/QuestionController.php';
-            require_once 'api/controllers/SessionController.php';
+            require_once 'controllers/AuthController.php';
+            require_once 'controllers/QuestionController.php';
+            require_once 'controllers/SessionController.php';
             
             $authController = new AuthController();
             $questionController = new QuestionController();
@@ -277,7 +277,7 @@ try {
                             exit;
                         }
                         
-                        require_once 'api/models/User.php';
+                        require_once 'models/User.php';
                         $userModel = new User();
                         $users = $userModel->getAll();
                         
