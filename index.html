@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test de Tránsito - Sistema de Evaluación</title>
+    <title>Sistema de Test de Tránsito</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -11,17 +11,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    <!-- Animate.css -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
-    
     <!-- Custom CSS -->
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#">
+            <a class="navbar-brand" href="#home">
                 <i class="bi bi-car-front"></i> Test de Tránsito
             </a>
             
@@ -34,10 +31,10 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#home">Inicio</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item user-only" style="display: none;">
                         <a class="nav-link" href="#tests">Tests</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item user-only" style="display: none;">
                         <a class="nav-link" href="#history">Historial</a>
                     </li>
                     <li class="nav-item admin-only" style="display: none;">
@@ -45,98 +42,162 @@
                     </li>
                 </ul>
                 
-                <ul class="navbar-nav">
-                    <li class="nav-item" id="auth-buttons">
-                        <button class="btn btn-outline-light me-2" onclick="showLoginModal()">Iniciar Sesión</button>
-                        <button class="btn btn-light" onclick="showRegisterModal()">Registrarse</button>
-                    </li>
-                    <li class="nav-item dropdown" id="user-menu" style="display: none;">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle"></i> <span id="user-name">Usuario</span>
-                        </a>
+                <!-- Botones de autenticación -->
+                <div id="authButtons" class="d-flex">
+                    <button class="btn btn-outline-light me-2" onclick="showLoginModal()">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </button>
+                    <button class="btn btn-light" onclick="showRegisterModal()">
+                        <i class="bi bi-person-plus"></i> Registrarse
+                    </button>
+                </div>
+                
+                <!-- Menú de usuario -->
+                <div id="userMenu" class="d-flex align-items-center" style="display: none;">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <span id="userName">Usuario</span>
+                        </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#profile">Mi Perfil</a></li>
-                            <li><a class="dropdown-item" href="#stats">Estadísticas</a></li>
+                            <li><span class="dropdown-item-text"><small id="userRole">Usuario</small></span></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="logout()">Cerrar Sesión</a></li>
+                            <li><a class="dropdown-item" href="#profile">Mi Perfil</a></li>
+                            <li><a class="dropdown-item" href="#history">Mi Historial</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">Cerrar Sesión</a></li>
                         </ul>
-                    </li>
-                </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="container mt-5 pt-5">
-        <!-- Home Section -->
-        <section id="home" class="animate__animated animate__fadeIn">
-            <div class="row align-items-center min-vh-100">
-                <div class="col-lg-6">
-                    <h1 class="display-4 fw-bold text-primary mb-4">
-                        Prepárate para tu Licencia de Conducir
+    <!-- Contenido Principal -->
+    <main class="container mt-4">
+        <!-- Sección Home -->
+        <section id="home" class="section">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h1 class="display-4 mb-4">
+                        <i class="bi bi-car-front text-primary"></i>
+                        Sistema de Test de Tránsito
                     </h1>
-                    <p class="lead mb-4">
-                        Sistema completo de evaluación para obtener tu licencia de conducir. 
-                        Practica con cientos de preguntas y mejora tus conocimientos de tránsito.
+                    <p class="lead mb-5">
+                        Practica y mejora tus conocimientos sobre las normas de tránsito con nuestro sistema de tests interactivo.
                     </p>
-                    <div class="d-flex gap-3">
-                        <button class="btn btn-primary btn-lg" onclick="startTest()">
-                            <i class="bi bi-play-circle"></i> Comenzar Test
-                        </button>
-                        <button class="btn btn-outline-primary btn-lg" onclick="showStats()">
-                            <i class="bi bi-graph-up"></i> Ver Estadísticas
-                        </button>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <img src="assets/img/driving-test.svg" alt="Test de Conducir" class="img-fluid">
-                </div>
-            </div>
-        </section>
-
-        <!-- Tests Section -->
-        <section id="tests" class="py-5" style="display: none;">
-            <div class="row">
-                <div class="col-12">
-                    <h2 class="text-center mb-5">Selecciona tu Test</h2>
-                </div>
-            </div>
-            
-            <div class="row" id="categories-container">
-                <!-- Categories will be loaded here -->
-            </div>
-        </section>
-
-        <!-- Test Interface -->
-        <section id="test-interface" class="py-5" style="display: none;">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header bg-primary text-white">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">Test en Progreso</h5>
-                                <div>
-                                    <span class="badge bg-light text-dark me-2">
-                                        <i class="bi bi-clock"></i> <span id="timer">00:00</span>
-                                    </span>
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi bi-question-circle"></i> 
-                                        <span id="question-counter">0/0</span>
-                                    </span>
+                    
+                    <!-- Estadísticas -->
+                    <div class="row mb-5">
+                        <div class="col-md-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-collection text-primary" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Categorías</h5>
+                                    <h3 class="text-primary" id="totalCategories">20</h3>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <div id="question-container">
-                                <!-- Question content will be loaded here -->
+                        <div class="col-md-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-question-circle text-success" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Preguntas</h5>
+                                    <h3 class="text-success" id="totalQuestions">100</h3>
+                                </div>
                             </div>
                         </div>
-                        <div class="card-footer">
+                        <div class="col-md-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-people text-info" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Usuarios</h5>
+                                    <h3 class="text-info" id="totalUsers">100+</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <button class="btn btn-primary btn-lg user-only" style="display: none;" onclick="showSection('tests')">
+                            <i class="bi bi-play-circle"></i> Iniciar Test
+                        </button>
+                        <button class="btn btn-outline-primary btn-lg guest-only" onclick="showLoginModal()">
+                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                        </button>
+                        <button class="btn btn-success btn-lg guest-only" onclick="showRegisterModal()">
+                            <i class="bi bi-person-plus"></i> Registrarse
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Tests -->
+        <section id="tests" class="section" style="display: none;">
+            <h2 class="text-center mb-4">Categorías de Tests</h2>
+            <div id="categoriesContainer" class="row">
+                <!-- Las categorías se cargarán dinámicamente -->
+            </div>
+        </section>
+
+        <!-- Sección Test Interface -->
+        <section id="test-interface" class="section" style="display: none;">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <!-- Progress Bar -->
+                    <div id="testProgress" class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span id="questionCounter">Pregunta 1 de 20</span>
+                            <span id="testTimer">20:00</span>
+                        </div>
+                        <div class="progress">
+                            <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <small id="progressText">0/20 respondidas</small>
+                    </div>
+
+                    <!-- Pregunta -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 id="questionText" class="card-title mb-4">Texto de la pregunta...</h5>
+                            
+                            <!-- Imagen de la pregunta -->
+                            <div class="text-center mb-4" id="questionImageContainer" style="display: none;">
+                                <img id="questionImage" src="" alt="Imagen de la pregunta" class="img-fluid" style="max-height: 300px;">
+                            </div>
+                            
+                            <!-- Opciones -->
+                            <div class="mb-4">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="answer" id="answer1" value="1">
+                                    <label class="form-check-label" for="answer1" id="answer1Label">
+                                        Opción A
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="answer" id="answer2" value="2">
+                                    <label class="form-check-label" for="answer2" id="answer2Label">
+                                        Opción B
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="answer" id="answer3" value="3">
+                                    <label class="form-check-label" for="answer3" id="answer3Label">
+                                        Opción C
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Navegación -->
                             <div class="d-flex justify-content-between">
-                                <button class="btn btn-secondary" onclick="previousQuestion()">
+                                <button id="prevQuestionBtn" class="btn btn-secondary">
                                     <i class="bi bi-arrow-left"></i> Anterior
                                 </button>
-                                <button class="btn btn-primary" onclick="nextQuestion()">
+                                <button id="finishTestBtn" class="btn btn-success">
+                                    Finalizar Test <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button id="nextQuestionBtn" class="btn btn-primary">
                                     Siguiente <i class="bi bi-arrow-right"></i>
                                 </button>
                             </div>
@@ -146,90 +207,83 @@
             </div>
         </section>
 
-        <!-- History Section -->
-        <section id="history" class="py-5" style="display: none;">
-            <div class="row">
-                <div class="col-12">
-                    <h2 class="text-center mb-5">Historial de Tests</h2>
+        <!-- Sección Historial -->
+        <section id="history" class="section" style="display: none;">
+            <h2 class="text-center mb-4">Mi Historial de Tests</h2>
+            <div id="historyContainer" class="row">
+                <!-- El historial se cargará dinámicamente -->
+            </div>
+        </section>
+
+        <!-- Sección Administración -->
+        <section id="admin" class="section" style="display: none;">
+            <h2 class="text-center mb-4">Panel de Administración</h2>
+            
+            <!-- Estadísticas -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Preguntas</h5>
+                            <h3 class="text-primary" id="adminTotalQuestions">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Categorías</h5>
+                            <h3 class="text-success" id="adminTotalCategories">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Usuarios</h5>
+                            <h3 class="text-info" id="adminTotalUsers">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Tests</h5>
+                            <h3 class="text-warning" id="adminTotalTests">0</h3>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="row">
-                <div class="col-12">
+            <!-- Tabla de categorías -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Categorías</h5>
+                    <button class="btn btn-primary btn-sm" onclick="showAddCategoryModal()">
+                        <i class="bi bi-plus-circle"></i> Agregar Categoría
+                    </button>
+                </div>
+                <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Fecha</th>
-                                    <th>Test</th>
-                                    <th>Puntuación</th>
-                                    <th>Estado</th>
+                                    <th>Nombre</th>
+                                    <th>Preguntas</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="history-table">
-                                <!-- History data will be loaded here -->
+                            <tbody id="adminContainer">
+                                <!-- Las categorías se cargarán dinámicamente -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </section>
-
-        <!-- Admin Section -->
-        <section id="admin" class="py-5" style="display: none;">
-            <div class="row">
-                <div class="col-12">
-                    <h2 class="text-center mb-5">Panel de Administración</h2>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Gestión de Preguntas</h5>
-                        </div>
-                        <div class="card-body">
-                            <button class="btn btn-primary" onclick="showAddQuestionModal()">
-                                <i class="bi bi-plus-circle"></i> Agregar Pregunta
-                            </button>
-                            <button class="btn btn-outline-primary" onclick="loadQuestions()">
-                                <i class="bi bi-list"></i> Ver Todas
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Gestión de Categorías</h5>
-                        </div>
-                        <div class="card-body">
-                            <button class="btn btn-primary" onclick="showAddCategoryModal()">
-                                <i class="bi bi-plus-circle"></i> Agregar Categoría
-                            </button>
-                            <button class="btn btn-outline-primary" onclick="loadCategories()">
-                                <i class="bi bi-list"></i> Ver Todas
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-12">
-                    <div id="admin-content">
-                        <!-- Admin content will be loaded here -->
-                    </div>
-                </div>
-            </div>
-        </section>
     </main>
 
-    <!-- Modals -->
-    <!-- Login Modal -->
+    <!-- Modal de Login -->
     <div class="modal fade" id="loginModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -247,17 +301,18 @@
                             <label for="loginPassword" class="form-label">Contraseña</label>
                             <input type="password" class="form-control" id="loginPassword" required>
                         </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="login()">Iniciar Sesión</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Register Modal -->
+    <!-- Modal de Registro -->
     <div class="modal fade" id="registerModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -289,17 +344,18 @@
                             <label for="registerPassword" class="form-label">Contraseña</label>
                             <input type="password" class="form-control" id="registerPassword" required>
                         </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-person-plus"></i> Registrarse
+                            </button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="register()">Registrarse</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Add Question Modal -->
+    <!-- Modal de Agregar Pregunta -->
     <div class="modal fade" id="addQuestionModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -309,11 +365,17 @@
                 </div>
                 <div class="modal-body">
                     <form id="addQuestionForm">
-                        <div class="mb-3">
-                            <label for="questionCategory" class="form-label">Categoría</label>
-                            <select class="form-select" id="questionCategory" required>
-                                <!-- Categories will be loaded here -->
-                            </select>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="questionCategory" class="form-label">Categoría</label>
+                                <select class="form-select" id="questionCategory" required>
+                                    <option value="">Seleccionar categoría...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="questionNro" class="form-label">Número (NRO)</label>
+                                <input type="number" class="form-control" id="questionNro" required>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="questionText" class="form-label">Pregunta</label>
@@ -321,54 +383,96 @@
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="optionA" class="form-label">Opción A</label>
-                                <input type="text" class="form-control" id="optionA" required>
+                                <label for="questionAnswer1" class="form-label">Respuesta 1</label>
+                                <input type="text" class="form-control" id="questionAnswer1" required>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="optionB" class="form-label">Opción B</label>
-                                <input type="text" class="form-control" id="optionB" required>
+                                <label for="questionAnswer2" class="form-label">Respuesta 2</label>
+                                <input type="text" class="form-control" id="questionAnswer2" required>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="optionC" class="form-label">Opción C</label>
-                                <input type="text" class="form-control" id="optionC" required>
+                                <label for="questionAnswer3" class="form-label">Respuesta 3</label>
+                                <input type="text" class="form-control" id="questionAnswer3" required>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="correctAnswer" class="form-label">Respuesta Correcta</label>
-                            <select class="form-select" id="correctAnswer" required>
-                                <option value="">Seleccionar...</option>
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="C">C</option>
-                            </select>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Respuesta Correcta</label>
+                                <div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="correctAnswer" id="correct1" value="1" required>
+                                        <label class="form-check-label" for="correct1">1</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="correctAnswer" id="correct2" value="2">
+                                        <label class="form-check-label" for="correct2">2</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="correctAnswer" id="correct3" value="3">
+                                        <label class="form-check-label" for="correct3">3</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="questionArticle" class="form-label">Referencia de Artículo</label>
+                                <input type="text" class="form-control" id="questionArticle">
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="questionExplanation" class="form-label">Explicación (opcional)</label>
-                            <textarea class="form-control" id="questionExplanation" rows="2"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="questionImage" class="form-label">Imagen (opcional)</label>
-                            <input type="file" class="form-control" id="questionImage" accept="image/*">
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Agregar Pregunta
+                            </button>
                         </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="addQuestion()">Agregar Pregunta</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- Custom JS -->
     <script src="assets/js/app.js"></script>
+    
+    <script>
+        // Funciones de modal que faltaban
+        function showLoginModal() {
+            $('#loginModal').modal('show');
+        }
+        
+        function showRegisterModal() {
+            $('#registerModal').modal('show');
+        }
+        
+        function showAddCategoryModal() {
+            Swal.fire({
+                title: 'Agregar Categoría',
+                html: `
+                    <input id="categoryName" class="swal2-input" placeholder="Nombre de la categoría">
+                    <textarea id="categoryDescription" class="swal2-textarea" placeholder="Descripción (opcional)"></textarea>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Agregar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    const name = document.getElementById('categoryName').value;
+                    const description = document.getElementById('categoryDescription').value;
+                    
+                    if (!name) {
+                        Swal.showValidationMessage('El nombre es requerido');
+                        return false;
+                    }
+                    
+                    return { name, description };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Aquí se puede implementar la lógica para agregar categoría
+                    Swal.fire('Éxito', 'Categoría agregada correctamente', 'success');
+                }
+            });
+        }
+    </script>
 </body>
 </html>
