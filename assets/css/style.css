@@ -14,7 +14,12 @@
 /* Estilos generales */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #000;
+    background-color: #000 !important;
+    color: #fff;
+}
+
+html {
+    background-color: #000 !important;
 }
 
 /* Navbar personalizado */

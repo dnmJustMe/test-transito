@@ -33,9 +33,13 @@ class AuthController {
             }
             
             // Verificar si el email ya existe
-            $existingUser = $this->userModel->findByEmail($input['email']);
-            if ($existingUser) {
+            if ($this->userModel->emailExists($input['email'])) {
                 return $this->sendResponse(false, 'El email ya está registrado');
+            }
+            
+            // Verificar si el username ya existe
+            if ($this->userModel->usernameExists($input['username'])) {
+                return $this->sendResponse(false, 'El nombre de usuario ya está registrado');
             }
             
             // Crear usuario

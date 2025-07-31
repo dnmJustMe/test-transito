@@ -38,6 +38,26 @@ class User {
         return $stmt->fetch();
     }
     
+    public function findByUsername($username) {
+        $sql = "SELECT * FROM users WHERE username = ?";
+        $stmt = $this->db->query($sql, [$username]);
+        return $stmt->fetch();
+    }
+    
+    public function emailExists($email) {
+        $sql = "SELECT COUNT(*) as count FROM users WHERE email = ?";
+        $stmt = $this->db->query($sql, [$email]);
+        $result = $stmt->fetch();
+        return $result['count'] > 0;
+    }
+    
+    public function usernameExists($username) {
+        $sql = "SELECT COUNT(*) as count FROM users WHERE username = ?";
+        $stmt = $this->db->query($sql, [$username]);
+        $result = $stmt->fetch();
+        return $result['count'] > 0;
+    }
+    
     public function findById($id) {
         $sql = "SELECT * FROM users WHERE id = ?";
         $stmt = $this->db->query($sql, [$id]);
