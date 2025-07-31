@@ -137,10 +137,10 @@ function updateUIForLoggedInUser() {
     
     $('#userName').text(currentUser.first_name + ' ' + currentUser.last_name);
     $('#userRole').text(currentUser.role === 'admin' ? 'Administrador' : 'Usuario');
-    $('#userLives').text(currentUser.lives);
+    $('#userLives').text(currentUser.lives || 3);
     
     // Actualizar vidas en la sección de tests
-    $('#currentLives').text(currentUser.lives);
+    $('#currentLives').text(currentUser.lives || 3);
 }
 
 function updateUIForGuest() {
