@@ -37,6 +37,9 @@
                     <li class="nav-item user-only" style="display: none;">
                         <a class="nav-link" href="#history">Historial</a>
                     </li>
+                    <li class="nav-item user-only" style="display: none;">
+                        <a class="nav-link" href="#profile">Mi Perfil</a>
+                    </li>
                     <li class="nav-item admin-only" style="display: none;">
                         <a class="nav-link" href="#admin">Administración</a>
                     </li>
@@ -63,6 +66,7 @@
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#profile">Mi Perfil</a></li>
                             <li><a class="dropdown-item" href="#history">Mi Historial</a></li>
+                            <li><a class="dropdown-item" href="#stats">Mis Estadísticas</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" id="logoutBtn">Cerrar Sesión</a></li>
                         </ul>
@@ -212,6 +216,87 @@
             <h2 class="text-center mb-4">Mi Historial de Tests</h2>
             <div id="historyContainer" class="row">
                 <!-- El historial se cargará dinámicamente -->
+            </div>
+        </section>
+
+        <!-- Sección Perfil -->
+        <section id="profile" class="section" style="display: none;">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="text-center mb-4">Mi Perfil</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="profileForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="profileFirstName" class="form-label">Nombre</label>
+                                        <input type="text" class="form-control" id="profileFirstName" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="profileLastName" class="form-label">Apellido</label>
+                                        <input type="text" class="form-control" id="profileLastName" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="profileEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="profileEmail" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="profileUsername" class="form-label">Nombre de Usuario</label>
+                                    <input type="text" class="form-control" id="profileUsername" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Actualizar Perfil
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Estadísticas -->
+        <section id="stats" class="section" style="display: none;">
+            <h2 class="text-center mb-4">Mis Estadísticas</h2>
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="bi bi-trophy text-warning" style="font-size: 2rem;"></i>
+                            <h5 class="card-title mt-2">Tests Completados</h5>
+                            <h3 class="text-warning" id="statsTestsCompleted">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="bi bi-graph-up text-success" style="font-size: 2rem;"></i>
+                            <h5 class="card-title mt-2">Promedio</h5>
+                            <h3 class="text-success" id="statsAverageScore">0%</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="bi bi-star text-primary" style="font-size: 2rem;"></i>
+                            <h5 class="card-title mt-2">Mejor Puntuación</h5>
+                            <h3 class="text-primary" id="statsBestScore">0%</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="bi bi-check-circle text-info" style="font-size: 2rem;"></i>
+                            <h5 class="card-title mt-2">Tests Aprobados</h5>
+                            <h3 class="text-info" id="statsPassedTests">0</h3>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 

@@ -49,6 +49,12 @@ function setupEventListeners() {
         logout();
     });
 
+    // Perfil
+    $('#profileForm').on('submit', function(e) {
+        e.preventDefault();
+        updateProfile();
+    });
+
     // Botones de acción
     $('#startTestBtn').on('click', function() {
         startTest();
@@ -153,6 +159,22 @@ function showSection(sectionName) {
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tu historial', 'warning');
                 }
                 break;
+            case 'profile':
+                if (currentUser) {
+                    loadProfile();
+                } else {
+                    showSection('home');
+                    Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tu perfil', 'warning');
+                }
+                break;
+            case 'stats':
+                if (currentUser) {
+                    loadUserStats();
+                } else {
+                    showSection('home');
+                    Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tus estadísticas', 'warning');
+                }
+                break;
             case 'admin':
                 if (currentUser && currentUser.role === 'admin') {
                     loadAdminDashboard();
@@ -215,8 +237,21 @@ function login() {
         }),
         success: function(response) {
             if (response.success) {
-                localStorage.setItem('token', response.data.token);
-                currentUser = response.data.user;
+                // Manejar diferentes estructuras de respuesta
+                let token, user;
+                if (response.data && response.data.token) {
+                    token = response.data.token;
+                    user = response.data.user;
+                } else if (response.token) {
+                    token = response.token;
+                    user = response.user;
+                } else {
+                    Swal.fire('Error', 'Respuesta del servidor inválida', 'error');
+                    return;
+                }
+                
+                localStorage.setItem('token', token);
+                currentUser = user;
                 
                 $('#loginModal').modal('hide');
                 $('#loginForm')[0].reset();
@@ -285,6 +320,80 @@ function logout() {
     showSection('home');
     
     Swal.fire('Sesión Cerrada', 'Has cerrado sesión correctamente', 'info');
+}
+
+function loadProfile() {
+    if (!currentUser) return;
+    
+    // Cargar datos del perfil
+    $('#profileFirstName').val(currentUser.first_name);
+    $('#profileLastName').val(currentUser.last_name);
+    $('#profileEmail').val(currentUser.email);
+    $('#profileUsername').val(currentUser.username);
+}
+
+function updateProfile() {
+    const formData = {
+        first_name: $('#profileFirstName').val(),
+        last_name: $('#profileLastName').val(),
+        email: $('#profileEmail').val(),
+        username: $('#profileUsername').val()
+    };
+    
+    // Validaciones
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.username) {
+        Swal.fire('Error', 'Por favor completa todos los campos', 'error');
+        return;
+    }
+    
+    $.ajax({
+        url: API_BASE_URL + 'auth/profile',
+        method: 'PUT',
+        contentType: 'application/json',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        data: JSON.stringify(formData),
+        success: function(response) {
+            if (response.success) {
+                currentUser = response.data;
+                updateUIForLoggedInUser();
+                Swal.fire('Éxito', 'Perfil actualizado correctamente', 'success');
+            } else {
+                Swal.fire('Error', response.error || 'Error al actualizar perfil', 'error');
+            }
+        },
+        error: function(xhr) {
+            const response = xhr.responseJSON;
+            Swal.fire('Error', response?.error || 'Error al actualizar perfil', 'error');
+        }
+    });
+}
+
+function loadUserStats() {
+    $.ajax({
+        url: API_BASE_URL + 'sessions/stats',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            if (response.success) {
+                const stats = response.data;
+                $('#statsTestsCompleted').text(stats.total_tests || 0);
+                $('#statsAverageScore').text((stats.average_score || 0) + '%');
+                $('#statsBestScore').text((stats.best_score || 0) + '%');
+                $('#statsPassedTests').text(stats.passed_tests || 0);
+            }
+        },
+        error: function() {
+            // Mostrar datos por defecto si hay error
+            $('#statsTestsCompleted').text('0');
+            $('#statsAverageScore').text('0%');
+            $('#statsBestScore').text('0%');
+            $('#statsPassedTests').text('0');
+        }
+    });
 }
 
 function loadCategories() {
@@ -381,9 +490,9 @@ function displayQuestion(questionIndex) {
     const isAnswered = currentTest.answers[questionIndex] !== undefined;
     
     $('#questionText').text(question.question_text);
-    $('#answer1').text(question.answer1);
-    $('#answer2').text(question.answer2);
-    $('#answer3').text(question.answer3);
+    $('#answer1Label').text(question.answer1);
+    $('#answer2Label').text(question.answer2);
+    $('#answer3Label').text(question.answer3);
     
     // Reset radio buttons
     $('input[name="answer"]').prop('checked', false);
@@ -396,8 +505,9 @@ function displayQuestion(questionIndex) {
     // Show/hide image if exists
     if (question.image_url) {
         $('#questionImage').attr('src', question.image_url).show();
+        $('#questionImageContainer').show();
     } else {
-        $('#questionImage').hide();
+        $('#questionImageContainer').hide();
     }
     
     // Update navigation buttons
