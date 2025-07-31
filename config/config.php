@@ -5,7 +5,7 @@
 
 // Configuración de errores
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Cambiar a 1 en desarrollo
+ini_set('display_errors', 1); // Cambiar a 0 en producción
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../logs/error.log');
 
@@ -19,7 +19,7 @@ date_default_timezone_set('America/Havana');
 
 // Configuraciones del sitio
 define('SITE_NAME', 'Test Licencia Cuba');
-define('SITE_URL', 'http://localhost/test-licencia-cuba'); // Cambiar por tu dominio
+define('SITE_URL', 'http://localhost/test-transito'); // Cambiar por tu dominio
 define('API_VERSION', 'v1');
 
 // Rutas del sistema
