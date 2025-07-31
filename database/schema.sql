@@ -22,6 +22,7 @@ CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    question_count INT DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -31,14 +32,14 @@ CREATE TABLE categories (
 CREATE TABLE questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     category_id INT,
+    nro INT NOT NULL, -- Número de pregunta para las imágenes
     question_text TEXT NOT NULL,
-    option_a VARCHAR(255) NOT NULL,
-    option_b VARCHAR(255) NOT NULL,
-    option_c VARCHAR(255) NOT NULL,
-    correct_answer ENUM('A', 'B', 'C') NOT NULL,
+    answer1 VARCHAR(255) NOT NULL,
+    answer2 VARCHAR(255) NOT NULL,
+    answer3 VARCHAR(255) NOT NULL,
+    correct_answer INT NOT NULL CHECK (correct_answer IN (1, 2, 3)),
+    article_reference VARCHAR(20),
     image_path VARCHAR(255),
-    explanation TEXT,
-    difficulty ENUM('easy', 'medium', 'hard') DEFAULT 'medium',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -49,14 +50,16 @@ CREATE TABLE questions (
 CREATE TABLE tests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    total_questions INT DEFAULT 20,
-    time_limit INT DEFAULT 1200, -- 20 minutos en segundos
-    is_active BOOLEAN DEFAULT TRUE,
+    category_id INT,
+    total_questions INT NOT NULL,
+    correct_answers INT DEFAULT 0,
+    score DECIMAL(5,2) DEFAULT 0,
+    passed BOOLEAN DEFAULT 0,
+    time_taken INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
 -- Tabla de sesiones de test
@@ -64,13 +67,15 @@ CREATE TABLE test_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     test_id INT NOT NULL,
+    status ENUM('in_progress', 'completed', 'abandoned') DEFAULT 'in_progress',
     start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     end_time TIMESTAMP NULL,
-    score INT DEFAULT 0,
+    score DECIMAL(5,2) DEFAULT 0,
     total_questions INT DEFAULT 0,
     correct_answers INT DEFAULT 0,
-    status ENUM('in_progress', 'completed', 'abandoned') DEFAULT 'in_progress',
+    time_taken INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE CASCADE
 );
@@ -80,9 +85,9 @@ CREATE TABLE user_answers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     session_id INT NOT NULL,
     question_id INT NOT NULL,
-    user_answer ENUM('A', 'B', 'C') NOT NULL,
-    is_correct BOOLEAN DEFAULT FALSE,
-    time_spent INT DEFAULT 0, -- tiempo en segundos
+    selected_answer INT NOT NULL CHECK (selected_answer IN (1, 2, 3)),
+    is_correct BOOLEAN DEFAULT 0,
+    time_taken INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (session_id) REFERENCES test_sessions(id) ON DELETE CASCADE,
     FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
@@ -100,24 +105,38 @@ CREATE TABLE system_config (
 
 -- Insertar datos iniciales
 INSERT INTO categories (name, description) VALUES
-('Señales de Tránsito', 'Preguntas sobre señales de tránsito y su significado'),
-('Leyes de Tránsito', 'Preguntas sobre leyes y regulaciones de tránsito'),
-('Mecánica Básica', 'Preguntas sobre mecánica básica del vehículo'),
-('Primeros Auxilios', 'Preguntas sobre primeros auxilios en caso de accidente'),
-('Conducción Defensiva', 'Preguntas sobre técnicas de conducción defensiva');
+('Normas Generales', 'Normas generales de circulación y comportamiento en la vía'),
+('Señales y Semáforos', 'Señales de tránsito, semáforos y marcas viales'),
+('Prioridades y Pasos', 'Prioridades de paso, intersecciones y pasos a nivel'),
+('Adelantamientos', 'Normas sobre adelantamientos y maniobras'),
+('Vehículos y Carga', 'Especificaciones de vehículos y transporte de carga'),
+('Circulación Especial', 'Normas para circulación de vehículos especiales'),
+('Estacionamiento', 'Normas sobre estacionamiento y parada'),
+('Velocidades', 'Límites de velocidad y control de velocidad'),
+('Transporte de Carga', 'Normas específicas para transporte de carga'),
+('Estacionamiento y Parada', 'Normas sobre estacionamiento y parada de vehículos'),
+('Semáforos y Señales', 'Semáforos, señales luminosas y marcas viales'),
+('Señales de Peligro', 'Señales de peligro y advertencia'),
+('Marcas Viales', 'Marcas viales y líneas en el pavimento'),
+('Condiciones del Vehículo', 'Condiciones técnicas del vehículo'),
+('Alumbrado', 'Sistema de alumbrado y luces'),
+('Equipamiento', 'Equipamiento obligatorio del vehículo'),
+('Licencias de Conducción', 'Tipos de licencias y requisitos'),
+('Multas y Sanciones', 'Sistema de multas y sanciones'),
+('Infracciones Graves', 'Infracciones graves y sus consecuencias'),
+('Casos Prácticos', 'Casos prácticos de infracciones múltiples');
 
--- Insertar usuario administrador por defecto
--- Password: admin123 (hasheado con password_hash)
-INSERT INTO users (username, email, password, first_name, last_name, role) VALUES
-('admin', 'admin@test-transito.com', '$2y$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KqKqKq', 'Administrador', 'Sistema', 'admin');
+-- Insertar usuario administrador
+INSERT INTO users (username, email, password, first_name, last_name, role) VALUES 
+('admin', 'admin@test-transito.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrador', 'Sistema', 'admin');
 
 -- Insertar configuración del sistema
 INSERT INTO system_config (config_key, config_value, description) VALUES
-('site_name', 'Test de Tránsito', 'Nombre del sitio web'),
-('site_description', 'Sistema de evaluación para licencias de conducir', 'Descripción del sitio'),
-('questions_per_test', '20', 'Número de preguntas por test'),
-('time_limit_minutes', '20', 'Tiempo límite en minutos para cada test'),
-('passing_score', '70', 'Puntuación mínima para aprobar (porcentaje)');
+('site_name', 'Sistema de Test de Tránsito', 'Nombre del sitio web'),
+('max_questions_per_test', '20', 'Número máximo de preguntas por test'),
+('passing_score', '70', 'Puntuación mínima para aprobar'),
+('test_time_limit', '1200', 'Tiempo límite del test en segundos'),
+('questions_per_category', '5', 'Preguntas por categoría en test mixto');
 
 -- Crear índices para mejorar el rendimiento
 CREATE INDEX idx_users_email ON users(email);

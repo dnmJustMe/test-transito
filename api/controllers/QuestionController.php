@@ -7,28 +7,32 @@ require_once __DIR__ . '/../models/TestSession.php';
 require_once __DIR__ . '/../models/UserAnswer.php';
 
 class QuestionController {
-    private $question;
-    private $category;
-    private $testSession;
-    private $userAnswer;
+    private $questionModel;
+    private $categoryModel;
     
     public function __construct() {
-        $this->question = new Question();
-        $this->category = new Category();
-        $this->testSession = new TestSession();
-        $this->userAnswer = new UserAnswer();
+        $this->questionModel = new Question();
+        $this->categoryModel = new Category();
     }
     
     public function getAll() {
         try {
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
             $categoryId = isset($_GET['category_id']) ? (int)$_GET['category_id'] : null;
             
-            $questions = $this->question->getAll($page, $limit, $categoryId);
-            $total = $this->question->count($categoryId);
+            $questions = $this->questionModel->getAll($page, $limit, $categoryId);
             
-            http_response_code(200);
+            // Procesar imágenes para cada pregunta
+            foreach ($questions as &$question) {
+                if ($question['nro']) {
+                    $imagePath = $this->questionModel->getImagePath($question['nro']);
+                    $question['image_url'] = $imagePath ? BASE_URL . $imagePath : null;
+                }
+            }
+            
+            $total = $this->questionModel->count($categoryId);
+            
             echo json_encode([
                 'success' => true,
                 'data' => $questions,
@@ -39,16 +43,15 @@ class QuestionController {
                     'pages' => ceil($total / $limit)
                 ]
             ]);
-            
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
     
     public function getById($id) {
         try {
-            $question = $this->question->findById($id);
+            $question = $this->questionModel->findById($id);
             
             if (!$question) {
                 http_response_code(404);
@@ -56,23 +59,24 @@ class QuestionController {
                 return;
             }
             
-            http_response_code(200);
-            echo json_encode([
-                'success' => true,
-                'data' => $question
-            ]);
+            // Procesar imagen
+            if ($question['nro']) {
+                $imagePath = $this->questionModel->getImagePath($question['nro']);
+                $question['image_url'] = $imagePath ? BASE_URL . $imagePath : null;
+            }
             
+            echo json_encode(['success' => true, 'data' => $question]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
     
     public function create() {
         try {
-            $user = JWT::getCurrentUser();
-            
-            if (!$user || $user['role'] !== 'admin') {
+            // Verificar permisos de administrador
+            $currentUser = JWT::getCurrentUser();
+            if (!$currentUser || $currentUser['role'] !== 'admin') {
                 http_response_code(403);
                 echo json_encode(['error' => 'Acceso denegado']);
                 return;
@@ -80,35 +84,52 @@ class QuestionController {
             
             $input = json_decode(file_get_contents('php://input'), true);
             
-            // Validaciones
-            if (!$this->validateQuestionData($input)) {
+            // Validar datos requeridos
+            $required = ['category_id', 'nro', 'question_text', 'answer1', 'answer2', 'answer3', 'correct_answer'];
+            foreach ($required as $field) {
+                if (!isset($input[$field]) || empty($input[$field])) {
+                    http_response_code(400);
+                    echo json_encode(['error' => "Campo requerido: $field"]);
+                    return;
+                }
+            }
+            
+            // Validar que la categoría existe
+            $category = $this->categoryModel->findById($input['category_id']);
+            if (!$category) {
                 http_response_code(400);
-                echo json_encode(['error' => 'Datos de pregunta inválidos']);
+                echo json_encode(['error' => 'Categoría no válida']);
                 return;
             }
             
-            // Crear pregunta
-            $questionId = $this->question->create($input);
-            $question = $this->question->findById($questionId);
+            // Validar respuesta correcta
+            if (!in_array($input['correct_answer'], [1, 2, 3])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Respuesta correcta debe ser 1, 2 o 3']);
+                return;
+            }
             
-            http_response_code(201);
+            $questionId = $this->questionModel->create($input);
+            
+            // Actualizar contador de preguntas en la categoría
+            $this->categoryModel->updateQuestionCount($input['category_id']);
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'Pregunta creada exitosamente',
-                'data' => $question
+                'data' => ['id' => $questionId]
             ]);
-            
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
     
     public function update($id) {
         try {
-            $user = JWT::getCurrentUser();
-            
-            if (!$user || $user['role'] !== 'admin') {
+            // Verificar permisos de administrador
+            $currentUser = JWT::getCurrentUser();
+            if (!$currentUser || $currentUser['role'] !== 'admin') {
                 http_response_code(403);
                 echo json_encode(['error' => 'Acceso denegado']);
                 return;
@@ -116,180 +137,129 @@ class QuestionController {
             
             $input = json_decode(file_get_contents('php://input'), true);
             
-            // Validaciones
-            if (!$this->validateQuestionData($input)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Datos de pregunta inválidos']);
+            // Validar que la pregunta existe
+            $existingQuestion = $this->questionModel->findById($id);
+            if (!$existingQuestion) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Pregunta no encontrada']);
                 return;
             }
             
-            // Actualizar pregunta
-            $this->question->update($id, $input);
-            $question = $this->question->findById($id);
+            // Validar datos requeridos
+            $required = ['category_id', 'nro', 'question_text', 'answer1', 'answer2', 'answer3', 'correct_answer'];
+            foreach ($required as $field) {
+                if (!isset($input[$field]) || empty($input[$field])) {
+                    http_response_code(400);
+                    echo json_encode(['error' => "Campo requerido: $field"]);
+                    return;
+                }
+            }
             
-            http_response_code(200);
+            // Validar que la categoría existe
+            $category = $this->categoryModel->findById($input['category_id']);
+            if (!$category) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Categoría no válida']);
+                return;
+            }
+            
+            // Validar respuesta correcta
+            if (!in_array($input['correct_answer'], [1, 2, 3])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Respuesta correcta debe ser 1, 2 o 3']);
+                return;
+            }
+            
+            $this->questionModel->update($id, $input);
+            
+            // Actualizar contadores de categorías
+            $this->categoryModel->updateQuestionCount($input['category_id']);
+            if ($existingQuestion['category_id'] != $input['category_id']) {
+                $this->categoryModel->updateQuestionCount($existingQuestion['category_id']);
+            }
+            
             echo json_encode([
                 'success' => true,
-                'message' => 'Pregunta actualizada exitosamente',
-                'data' => $question
+                'message' => 'Pregunta actualizada exitosamente'
             ]);
-            
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
     
     public function delete($id) {
         try {
-            $user = JWT::getCurrentUser();
-            
-            if (!$user || $user['role'] !== 'admin') {
+            // Verificar permisos de administrador
+            $currentUser = JWT::getCurrentUser();
+            if (!$currentUser || $currentUser['role'] !== 'admin') {
                 http_response_code(403);
                 echo json_encode(['error' => 'Acceso denegado']);
                 return;
             }
             
-            $this->question->delete($id);
+            $question = $this->questionModel->findById($id);
+            if (!$question) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Pregunta no encontrada']);
+                return;
+            }
             
-            http_response_code(200);
+            $this->questionModel->delete($id);
+            
+            // Actualizar contador de preguntas en la categoría
+            $this->categoryModel->updateQuestionCount($question['category_id']);
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'Pregunta eliminada exitosamente'
             ]);
-            
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
-        }
-    }
-    
-    public function uploadImage($id) {
-        try {
-            $user = JWT::getCurrentUser();
-            
-            if (!$user || $user['role'] !== 'admin') {
-                http_response_code(403);
-                echo json_encode(['error' => 'Acceso denegado']);
-                return;
-            }
-            
-            if (!isset($_FILES['image'])) {
-                http_response_code(400);
-                echo json_encode(['error' => 'No se proporcionó imagen']);
-                return;
-            }
-            
-            $file = $_FILES['image'];
-            
-            // Validaciones de archivo
-            if ($file['error'] !== UPLOAD_ERR_OK) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Error al subir archivo']);
-                return;
-            }
-            
-            if ($file['size'] > MAX_FILE_SIZE) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Archivo demasiado grande']);
-                return;
-            }
-            
-            $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            if (!in_array($extension, ALLOWED_EXTENSIONS)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Tipo de archivo no permitido']);
-                return;
-            }
-            
-            // Crear directorio si no existe
-            if (!is_dir(UPLOAD_DIR)) {
-                mkdir(UPLOAD_DIR, 0755, true);
-            }
-            
-            // Generar nombre único
-            $filename = uniqid() . '.' . $extension;
-            $filepath = UPLOAD_DIR . $filename;
-            
-            if (move_uploaded_file($file['tmp_name'], $filepath)) {
-                $this->question->updateImage($id, $filename);
-                
-                http_response_code(200);
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Imagen subida exitosamente',
-                    'filename' => $filename
-                ]);
-            } else {
-                http_response_code(500);
-                echo json_encode(['error' => 'Error al guardar archivo']);
-            }
-            
-        } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
     
     public function getRandomQuestions() {
         try {
-            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
             $categoryId = isset($_GET['category_id']) ? (int)$_GET['category_id'] : null;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
             
-            $questions = $this->question->getRandomQuestions($limit, $categoryId);
+            $questions = $this->questionModel->getRandomQuestions($categoryId, $limit);
             
-            http_response_code(200);
-            echo json_encode([
-                'success' => true,
-                'data' => $questions
-            ]);
-            
-        } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
-        }
-    }
-    
-    public function search() {
-        try {
-            $term = isset($_GET['q']) ? $_GET['q'] : '';
-            
-            if (empty($term)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Término de búsqueda requerido']);
-                return;
+            // Procesar imágenes para cada pregunta
+            foreach ($questions as &$question) {
+                if ($question['nro']) {
+                    $imagePath = $this->questionModel->getImagePath($question['nro']);
+                    $question['image_url'] = $imagePath ? BASE_URL . $imagePath : null;
+                }
             }
             
-            $questions = $this->question->search($term);
-            
-            http_response_code(200);
             echo json_encode([
                 'success' => true,
                 'data' => $questions
             ]);
-            
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
     
     public function startTest() {
         try {
-            $user = JWT::getCurrentUser();
-            
-            if (!$user) {
+            $currentUser = JWT::getCurrentUser();
+            if (!$currentUser) {
                 http_response_code(401);
                 echo json_encode(['error' => 'No autorizado']);
                 return;
             }
             
             $input = json_decode(file_get_contents('php://input'), true);
-            $limit = $input['limit'] ?? 20;
-            $categoryId = $input['category_id'] ?? null;
+            $categoryId = isset($input['category_id']) ? (int)$input['category_id'] : null;
+            $questionCount = isset($input['question_count']) ? (int)$input['question_count'] : 20;
             
             // Obtener preguntas aleatorias
-            $questions = $this->question->getRandomQuestions($limit, $categoryId);
+            $questions = $this->questionModel->getRandomQuestions($categoryId, $questionCount);
             
             if (empty($questions)) {
                 http_response_code(404);
@@ -297,26 +267,83 @@ class QuestionController {
                 return;
             }
             
-            // Crear sesión de test
-            $sessionData = [
-                'user_id' => $user['user_id'],
-                'test_id' => 1, // Test por defecto
-                'total_questions' => count($questions)
-            ];
+            // Procesar imágenes para cada pregunta
+            foreach ($questions as &$question) {
+                if ($question['nro']) {
+                    $imagePath = $this->questionModel->getImagePath($question['nro']);
+                    $question['image_url'] = $imagePath ? BASE_URL . $imagePath : null;
+                }
+            }
             
-            $sessionId = $this->testSession->create($sessionData);
-            
-            http_response_code(200);
             echo json_encode([
                 'success' => true,
-                'session_id' => $sessionId,
-                'questions' => $questions,
-                'total_questions' => count($questions)
+                'data' => [
+                    'questions' => $questions,
+                    'total_questions' => count($questions)
+                ]
             ]);
-            
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Error interno del servidor: ' . $e->getMessage()]);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+    
+    public function uploadImage() {
+        try {
+            // Verificar permisos de administrador
+            $currentUser = JWT::getCurrentUser();
+            if (!$currentUser || $currentUser['role'] !== 'admin') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Acceso denegado']);
+                return;
+            }
+            
+            if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Error al subir imagen']);
+                return;
+            }
+            
+            $nro = isset($_POST['nro']) ? (int)$_POST['nro'] : null;
+            if (!$nro) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Número de pregunta requerido']);
+                return;
+            }
+            
+            $file = $_FILES['image'];
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            
+            if (!in_array($file['type'], $allowedTypes)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Tipo de archivo no permitido']);
+                return;
+            }
+            
+            $uploadDir = UPLOAD_DIR;
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            
+            $filename = "i{$nro}.png";
+            $filepath = $uploadDir . $filename;
+            
+            if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Imagen subida exitosamente',
+                    'data' => [
+                        'filename' => $filename,
+                        'path' => "assets/img/questions/{$filename}"
+                    ]
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al guardar imagen']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
     
@@ -339,7 +366,7 @@ class QuestionController {
             }
             
             // Obtener pregunta
-            $question = $this->question->findById($input['question_id']);
+            $question = $this->questionModel->findById($input['question_id']);
             if (!$question) {
                 http_response_code(404);
                 echo json_encode(['error' => 'Pregunta no encontrada']);

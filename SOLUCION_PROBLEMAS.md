@@ -1,211 +1,239 @@
-# Solución de Problemas - Sistema de Test de Tránsito
+# 🔧 **SOLUCIÓN DE PROBLEMAS - SISTEMA DE TEST DE TRÁNSITO**
 
-## Problemas Reportados
+## 📋 **Problemas Reportados y Soluciones**
 
-1. **Error 401 (Unauthorized)** al hacer login con admin
-2. **Error jQuery con "#"** al navegar después del login
-3. **Error 404** al intentar hacer un test
+### **Error 1: Column not found: 1054 Unknown column 'answer1'**
+**Problema:** El script de inserción de preguntas fallaba porque la estructura de la base de datos no coincidía.
 
-## Soluciones Implementadas
+**Solución:** 
+- ✅ **Estructura corregida** en `database/schema.sql`
+- ✅ **Script actualizado** en `insert_questions.php`
+- ✅ **Modelos actualizados** para usar la estructura correcta
 
-### 1. Script de Instalación Completo
+### **Error 2: 401 Unauthorized al hacer login**
+**Problema:** El usuario admin no se creaba correctamente o tenía credenciales incorrectas.
 
-Ejecuta el script de instalación para configurar todo correctamente:
+**Solución:**
+- ✅ **Script de instalación mejorado** en `install.php`
+- ✅ **Usuario admin recreado** con contraseña conocida: `admin123`
 
-```bash
-# Ejecutar el instalador
-php install.php
+### **Error 3: jQuery Syntax Error en navegación**
+**Problema:** Error de jQuery al navegar después del login.
+
+**Solución:**
+- ✅ **Navegación corregida** en `assets/js/app.js`
+- ✅ **Validaciones agregadas** para enlaces vacíos
+
+### **Error 4: 404 Not Found al iniciar test**
+**Problema:** No había preguntas en la base de datos.
+
+**Solución:**
+- ✅ **Script de preguntas corregido** en `insert_questions.php`
+- ✅ **100 preguntas insertadas** con estructura correcta
+
+## 🚀 **INSTRUCCIONES DETALLADAS PARA XAMPP EN WINDOWS**
+
+### **Paso 1: Preparar XAMPP**
+
+1. **Abrir XAMPP Control Panel**
+   - Busca "XAMPP" en el menú de Windows
+   - O ve a `C:\xampp\xampp-control.exe`
+
+2. **Iniciar Servicios**
+   - Haz clic en **"Start"** para **Apache**
+   - Haz clic en **"Start"** para **MySQL**
+   - Verifica que ambos muestren **"Running"** en verde
+
+3. **Verificar que funcionan**
+   - Abre tu navegador
+   - Ve a `http://localhost/`
+   - Deberías ver la página de XAMPP
+
+### **Paso 2: Colocar el Proyecto**
+
+1. **Navegar al directorio de XAMPP**
+   ```
+   C:\xampp\htdocs\
+   ```
+
+2. **Crear carpeta del proyecto**
+   - Crea una carpeta llamada `test-transito`
+   - La ruta completa será: `C:\xampp\htdocs\test-transito\`
+
+3. **Copiar archivos del proyecto**
+   - Copia todos los archivos del proyecto a esta carpeta
+   - Asegúrate de que la estructura sea:
+   ```
+   C:\xampp\htdocs\test-transito\
+   ├── install.php
+   ├── insert_questions.php
+   ├── test_system.php
+   ├── index.html
+   ├── api\
+   ├── assets\
+   ├── database\
+   └── ...
+   ```
+
+### **Paso 3: Ejecutar Scripts de Instalación**
+
+#### **Opción A: Desde el Navegador (Recomendado)**
+
+1. **Ejecutar instalador**
+   - Abre tu navegador
+   - Ve a: `http://localhost/test-transito/install.php`
+   - Deberías ver la salida del script en la pantalla
+
+2. **Ejecutar insertador de preguntas**
+   - Ve a: `http://localhost/test-transito/insert_questions.php`
+   - Deberías ver el progreso de inserción
+
+3. **Probar el sistema**
+   - Ve a: `http://localhost/test-transito/test_system.php`
+   - Verifica que todos los checks muestren ✓
+
+#### **Opción B: Desde Línea de Comandos**
+
+1. **Abrir Command Prompt**
+   - Presiona `Windows + R`
+   - Escribe `cmd` y presiona Enter
+
+2. **Navegar al directorio**
+   ```cmd
+   cd C:\xampp\htdocs\test-transito
+   ```
+
+3. **Ejecutar scripts**
+   ```cmd
+   php install.php
+   php insert_questions.php
+   php test_system.php
+   ```
+
+### **Paso 4: Configurar Imágenes**
+
+1. **Crear directorio de imágenes**
+   - Ve a: `C:\xampp\htdocs\test-transito\assets\img\questions\`
+
+2. **Colocar imágenes**
+   - Nombra las imágenes como: `i{NRO}.png`
+   - Ejemplo: `i10.png`, `i825.png`, etc.
+   - El NRO corresponde al campo en la base de datos
+
+3. **Verificar imágenes**
+   - Las imágenes deben estar en formato PNG
+   - El sistema buscará automáticamente las imágenes
+
+### **Paso 5: Probar el Sistema**
+
+1. **Acceder al sistema**
+   - Ve a: `http://localhost/test-transito/`
+   - Deberías ver la página principal
+
+2. **Hacer login**
+   - Haz clic en **"Iniciar Sesión"**
+   - Usuario: `admin`
+   - Contraseña: `admin123`
+
+3. **Probar funcionalidades**
+   - Navega entre las secciones
+   - Intenta realizar un test
+   - Verifica el panel de administración
+
+## 🔧 **Solución de Problemas Comunes**
+
+### **Error: "php no se reconoce como comando"**
+```cmd
+# Agregar PHP al PATH
+set PATH=%PATH%;C:\xampp\php
 ```
 
-Este script:
-- ✅ Crea la base de datos y tablas
-- ✅ Crea el usuario admin con contraseña correcta
-- ✅ Inserta las categorías por defecto
-- ✅ Crea los directorios necesarios
+### **Error de conexión a MySQL**
+1. Verifica que MySQL esté iniciado en XAMPP
+2. Verifica las credenciales en `api/config/config.php`:
+   ```php
+   define('DB_HOST', 'localhost');
+   define('DB_NAME', 'test_transito');
+   define('DB_USER', 'root');
+   define('DB_PASS', '');  // Sin contraseña por defecto
+   ```
 
-### 2. Insertar Preguntas
+### **Error de permisos**
+1. Haz clic derecho en la carpeta `test-transito`
+2. Propiedades → Seguridad
+3. Asegúrate de que el usuario tenga permisos de escritura
 
-Después de la instalación, ejecuta:
+### **Error 404 en Apache**
+1. Verifica que Apache esté iniciado
+2. Verifica que el archivo `.htaccess` esté presente
+3. Verifica que `mod_rewrite` esté habilitado en XAMPP
 
-```bash
-# Insertar las 100 preguntas del JSON
-php insert_questions.php
-```
+### **Error: "Column not found"**
+1. Ejecuta `install.php` para recrear las tablas
+2. Ejecuta `insert_questions.php` para insertar las preguntas
+3. Verifica con `test_system.php`
 
-### 3. Credenciales del Admin
+## 📊 **Verificación del Sistema**
 
-- **Usuario**: `admin`
-- **Contraseña**: `admin123`
-- **Email**: `admin@test-transito.com`
+### **Script de Prueba**
+Ejecuta `test_system.php` para verificar:
+- ✅ Conexión a la base de datos
+- ✅ Tablas creadas correctamente
+- ✅ Usuario admin configurado
+- ✅ Categorías insertadas
+- ✅ Preguntas insertadas
+- ✅ Estructura de base de datos correcta
+- ✅ Directorios creados
+- ✅ Archivos principales presentes
+- ✅ API endpoints funcionando
 
-### 4. Problemas de Navegación Solucionados
+### **Verificación Manual**
+1. **Base de datos:**
+   - Ve a `http://localhost/phpmyadmin`
+   - Selecciona `test_transito`
+   - Verifica las tablas: `users`, `categories`, `questions`
 
-Se han corregido los errores en `assets/js/app.js`:
-- ✅ Validación de enlaces de navegación
-- ✅ Manejo de secciones inexistentes
-- ✅ Prevención de errores jQuery con "#"
+2. **Sistema web:**
+   - Ve a `http://localhost/test-transito/`
+   - Haz login con `admin` / `admin123`
+   - Prueba todas las funcionalidades
 
-### 5. Verificación de la API
+## 🎯 **Pasos Rápidos (Resumen)**
 
-Para verificar que la API funciona correctamente:
+1. **Iniciar XAMPP** → Apache + MySQL
+2. **Copiar proyecto** → `C:\xampp\htdocs\test-transito\`
+3. **Ejecutar instalador** → `http://localhost/test-transito/install.php`
+4. **Insertar preguntas** → `http://localhost/test-transito/insert_questions.php`
+5. **Probar sistema** → `http://localhost/test-transito/test_system.php`
+6. **Acceder al sistema** → `http://localhost/test-transito/`
 
-```bash
-# Probar endpoint de categorías
-curl http://localhost/test-transito/api/categories/with-count
+## 📝 **Estructura de Imágenes**
 
-# Probar autenticación
-curl -X POST http://localhost/test-transito/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@test-transito.com","password":"admin123"}'
-```
+El sistema maneja las imágenes de la siguiente manera:
 
-## Pasos para Solucionar
+- **Ubicación:** `assets/img/questions/`
+- **Formato:** PNG
+- **Nomenclatura:** `i{NRO}.png`
+- **Ejemplo:** `i10.png`, `i825.png`
 
-### Paso 1: Ejecutar Instalador
-```bash
-php install.php
-```
+Donde `NRO` es el campo de la base de datos que identifica cada pregunta.
 
-### Paso 2: Insertar Preguntas
-```bash
-php insert_questions.php
-```
+## 🆘 **Si algo no funciona**
 
-### Paso 3: Verificar Configuración
-1. Asegúrate de que Apache/PHP esté funcionando
-2. Verifica que la base de datos MySQL esté activa
-3. Confirma que el directorio esté en `http://localhost/test-transito/`
+1. **Revisar logs de XAMPP**
+   - Ve a `C:\xampp\apache\logs\error.log`
+   - Ve a `C:\xampp\mysql\data\mysql_error.log`
 
-### Paso 4: Probar el Sistema
-1. Accede a `http://localhost/test-transito/`
-2. Haz login con admin/admin123
-3. Prueba la navegación entre secciones
-4. Intenta realizar un test
+2. **Verificar configuración**
+   - Asegúrate de que XAMPP esté en el puerto 80 (Apache) y 3306 (MySQL)
+   - Verifica que no haya conflictos con otros servicios
 
-## Estructura de Archivos Creados
+3. **Reiniciar servicios**
+   - Detén Apache y MySQL en XAMPP
+   - Inícialos nuevamente
 
-```
-├── install.php                    # Instalador completo
-├── insert_questions.php           # Script para insertar preguntas
-├── database/
-│   ├── schema.sql                # Esquema de base de datos
-│   ├── insert_questions.sql      # Inserts SQL de preguntas
-│   └── fix_admin_user.sql       # Arreglar usuario admin
-├── assets/
-│   ├── css/style.css            # Estilos corregidos
-│   └── js/app.js               # JavaScript corregido
-└── api/
-    ├── config/config.php        # Configuración
-    ├── controllers/             # Controladores
-    ├── models/                  # Modelos
-    └── includes/               # Utilidades
-```
+4. **Ejecutar script de prueba**
+   - Ve a `http://localhost/test-transito/test_system.php`
+   - Revisa los errores reportados
 
-## Verificación de Funcionamiento
-
-### 1. Verificar Base de Datos
-```sql
-USE test_transito;
-SELECT COUNT(*) as total_questions FROM questions;
-SELECT COUNT(*) as total_categories FROM categories;
-SELECT * FROM users WHERE username = 'admin';
-```
-
-### 2. Verificar Archivos
-```bash
-# Verificar que existan los directorios
-ls -la assets/img/questions/
-ls -la logs/
-
-# Verificar permisos
-chmod 755 assets/img/questions/
-chmod 755 logs/
-```
-
-### 3. Verificar API
-```bash
-# Probar endpoint de autenticación
-curl -X POST http://localhost/test-transito/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@test-transito.com","password":"admin123"}'
-```
-
-## Problemas Comunes y Soluciones
-
-### Error 401 (Unauthorized)
-- **Causa**: Usuario admin no existe o contraseña incorrecta
-- **Solución**: Ejecutar `php install.php`
-
-### Error jQuery con "#"
-- **Causa**: Enlaces de navegación mal formados
-- **Solución**: Ya corregido en `assets/js/app.js`
-
-### Error 404 en Tests
-- **Causa**: Preguntas no insertadas o categorías vacías
-- **Solución**: Ejecutar `php insert_questions.php`
-
-### Error de Conexión a Base de Datos
-- **Causa**: MySQL no está ejecutándose o credenciales incorrectas
-- **Solución**: Verificar que MySQL esté activo y las credenciales en `api/config/config.php`
-
-## Logs y Debugging
-
-### Verificar Logs de Error
-```bash
-tail -f logs/error.log
-```
-
-### Debugging de la API
-```bash
-# Verificar que la API responda
-curl http://localhost/test-transito/api/categories/
-
-# Verificar autenticación
-curl -X POST http://localhost/test-transito/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@test-transito.com","password":"admin123"}'
-```
-
-## Comandos de Verificación Rápida
-
-```bash
-# 1. Verificar que PHP funcione
-php -v
-
-# 2. Verificar que MySQL esté activo
-mysql -u root -p -e "SHOW DATABASES;"
-
-# 3. Ejecutar instalación
-php install.php
-
-# 4. Insertar preguntas
-php insert_questions.php
-
-# 5. Verificar archivos
-ls -la assets/img/questions/
-ls -la logs/
-
-# 6. Probar API
-curl http://localhost/test-transito/api/categories/with-count
-```
-
-## Notas Importantes
-
-1. **Contraseña del Admin**: `admin123` (no cambiar en el código)
-2. **Base de Datos**: `test_transito`
-3. **URL Base**: `http://localhost/test-transito/`
-4. **Directorio de Imágenes**: `assets/img/questions/`
-5. **Logs**: `logs/error.log`
-
-## Contacto y Soporte
-
-Si persisten los problemas después de seguir estos pasos:
-
-1. Verifica los logs de error en `logs/error.log`
-2. Confirma que Apache/PHP esté configurado correctamente
-3. Verifica que MySQL esté ejecutándose
-4. Asegúrate de que el directorio tenga los permisos correctos
-
----
-
-**Sistema Listo**: Después de ejecutar `install.php` e `insert_questions.php`, el sistema estará completamente funcional con 100 preguntas organizadas en 20 categorías.
+**¡Con estos pasos deberías tener el sistema funcionando perfectamente en XAMPP!**

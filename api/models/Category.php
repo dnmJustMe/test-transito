@@ -9,81 +9,47 @@ class Category {
     }
     
     public function create($data) {
-        try {
-            $sql = "INSERT INTO categories (name, description) VALUES (:name, :description)";
-            $params = [
-                ':name' => $data['name'],
-                ':description' => $data['description'] ?? null
-            ];
-            
-            $this->db->query($sql, $params);
-            return $this->db->lastInsertId();
-        } catch (Exception $e) {
-            throw new Exception("Error al crear categoría: " . $e->getMessage());
-        }
+        $sql = "INSERT INTO categories (name, description) VALUES (?, ?)";
+        $params = [$data['name'], $data['description']];
+        return $this->db->query($sql, $params);
     }
     
     public function findById($id) {
-        try {
-            $sql = "SELECT * FROM categories WHERE id = :id AND is_active = 1";
-            return $this->db->fetch($sql, [':id' => $id]);
-        } catch (Exception $e) {
-            throw new Exception("Error al buscar categoría: " . $e->getMessage());
-        }
+        $sql = "SELECT * FROM categories WHERE id = ? AND deleted_at IS NULL";
+        return $this->db->fetch($sql, [$id]);
     }
     
     public function update($id, $data) {
-        try {
-            $sql = "UPDATE categories SET 
-                    name = :name, 
-                    description = :description,
-                    updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id";
-            
-            $params = [
-                ':id' => $id,
-                ':name' => $data['name'],
-                ':description' => $data['description'] ?? null
-            ];
-            
-            $this->db->query($sql, $params);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al actualizar categoría: " . $e->getMessage());
-        }
+        $sql = "UPDATE categories SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        $params = [$data['name'], $data['description'], $id];
+        return $this->db->query($sql, $params);
     }
     
     public function getAll() {
-        try {
-            $sql = "SELECT * FROM categories WHERE is_active = 1 ORDER BY name ASC";
-            return $this->db->fetchAll($sql);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener categorías: " . $e->getMessage());
-        }
+        $sql = "SELECT * FROM categories WHERE deleted_at IS NULL ORDER BY name";
+        return $this->db->fetchAll($sql);
     }
     
     public function delete($id) {
-        try {
-            $sql = "UPDATE categories SET is_active = 0 WHERE id = :id";
-            $this->db->query($sql, [':id' => $id]);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al eliminar categoría: " . $e->getMessage());
-        }
+        $sql = "UPDATE categories SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?";
+        return $this->db->query($sql, [$id]);
     }
     
     public function getWithQuestionCount() {
-        try {
-            $sql = "SELECT c.*, COUNT(q.id) as question_count 
-                    FROM categories c 
-                    LEFT JOIN questions q ON c.id = q.category_id AND q.is_active = 1
-                    WHERE c.is_active = 1 
-                    GROUP BY c.id 
-                    ORDER BY c.name ASC";
-            return $this->db->fetchAll($sql);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener categorías con conteo: " . $e->getMessage());
-        }
+        $sql = "SELECT c.*, COUNT(q.id) as question_count 
+                FROM categories c 
+                LEFT JOIN questions q ON c.id = q.category_id AND q.deleted_at IS NULL 
+                WHERE c.deleted_at IS NULL 
+                GROUP BY c.id 
+                ORDER BY c.name";
+        return $this->db->fetchAll($sql);
+    }
+    
+    public function updateQuestionCount($categoryId) {
+        $sql = "UPDATE categories SET question_count = (
+            SELECT COUNT(*) FROM questions WHERE category_id = ? AND deleted_at IS NULL
+        ) WHERE id = ?";
+        return $this->db->query($sql, [$categoryId, $categoryId]);
     }
 }
 ?>

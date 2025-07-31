@@ -44,8 +44,7 @@ try {
         role ENUM('user', 'admin') DEFAULT 'user',
         is_active BOOLEAN DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        deleted_at TIMESTAMP NULL
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
     
     // Tabla categories
@@ -63,6 +62,7 @@ try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS questions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         category_id INT,
+        nro INT NOT NULL,
         question_text TEXT NOT NULL,
         answer1 VARCHAR(255) NOT NULL,
         answer2 VARCHAR(255) NOT NULL,

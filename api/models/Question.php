@@ -9,184 +9,170 @@ class Question {
     }
     
     public function create($data) {
-        try {
-            $sql = "INSERT INTO questions (category_id, question_text, option_a, option_b, option_c, 
-                    correct_answer, image_path, explanation, difficulty) 
-                    VALUES (:category_id, :question_text, :option_a, :option_b, :option_c, 
-                    :correct_answer, :image_path, :explanation, :difficulty)";
-            
-            $params = [
-                ':category_id' => $data['category_id'],
-                ':question_text' => $data['question_text'],
-                ':option_a' => $data['option_a'],
-                ':option_b' => $data['option_b'],
-                ':option_c' => $data['option_c'],
-                ':correct_answer' => $data['correct_answer'],
-                ':image_path' => $data['image_path'] ?? null,
-                ':explanation' => $data['explanation'] ?? null,
-                ':difficulty' => $data['difficulty'] ?? 'medium'
-            ];
-            
-            $this->db->query($sql, $params);
-            return $this->db->lastInsertId();
-        } catch (Exception $e) {
-            throw new Exception("Error al crear pregunta: " . $e->getMessage());
+        $sql = "INSERT INTO questions (category_id, nro, question_text, answer1, answer2, answer3, correct_answer, article_reference, image_path) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $imagePath = null;
+        if (isset($data['nro'])) {
+            $imagePath = "assets/img/questions/i{$data['nro']}.png";
         }
+        
+        $params = [
+            $data['category_id'],
+            $data['nro'],
+            $data['question_text'],
+            $data['answer1'],
+            $data['answer2'],
+            $data['answer3'],
+            $data['correct_answer'],
+            $data['article_reference'] ?? null,
+            $imagePath
+        ];
+        
+        return $this->db->query($sql, $params);
     }
     
     public function findById($id) {
-        try {
-            $sql = "SELECT q.*, c.name as category_name 
-                    FROM questions q 
-                    LEFT JOIN categories c ON q.category_id = c.id 
-                    WHERE q.id = :id AND q.is_active = 1";
-            return $this->db->fetch($sql, [':id' => $id]);
-        } catch (Exception $e) {
-            throw new Exception("Error al buscar pregunta: " . $e->getMessage());
-        }
+        $sql = "SELECT q.*, c.name as category_name 
+                FROM questions q 
+                LEFT JOIN categories c ON q.category_id = c.id 
+                WHERE q.id = ? AND q.deleted_at IS NULL";
+        return $this->db->fetch($sql, [$id]);
     }
     
     public function update($id, $data) {
-        try {
-            $sql = "UPDATE questions SET 
-                    category_id = :category_id,
-                    question_text = :question_text,
-                    option_a = :option_a,
-                    option_b = :option_b,
-                    option_c = :option_c,
-                    correct_answer = :correct_answer,
-                    explanation = :explanation,
-                    difficulty = :difficulty,
-                    updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id";
-            
-            $params = [
-                ':id' => $id,
-                ':category_id' => $data['category_id'],
-                ':question_text' => $data['question_text'],
-                ':option_a' => $data['option_a'],
-                ':option_b' => $data['option_b'],
-                ':option_c' => $data['option_c'],
-                ':correct_answer' => $data['correct_answer'],
-                ':explanation' => $data['explanation'] ?? null,
-                ':difficulty' => $data['difficulty'] ?? 'medium'
-            ];
-            
-            $this->db->query($sql, $params);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al actualizar pregunta: " . $e->getMessage());
+        $sql = "UPDATE questions SET 
+                category_id = ?, 
+                nro = ?, 
+                question_text = ?, 
+                answer1 = ?, 
+                answer2 = ?, 
+                answer3 = ?, 
+                correct_answer = ?, 
+                article_reference = ?, 
+                image_path = ?,
+                updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ?";
+        
+        $imagePath = null;
+        if (isset($data['nro'])) {
+            $imagePath = "assets/img/questions/i{$data['nro']}.png";
         }
+        
+        $params = [
+            $data['category_id'],
+            $data['nro'],
+            $data['question_text'],
+            $data['answer1'],
+            $data['answer2'],
+            $data['answer3'],
+            $data['correct_answer'],
+            $data['article_reference'] ?? null,
+            $imagePath,
+            $id
+        ];
+        
+        return $this->db->query($sql, $params);
     }
     
-    public function updateImage($id, $imagePath) {
-        try {
-            $sql = "UPDATE questions SET image_path = :image_path WHERE id = :id";
-            $this->db->query($sql, [':id' => $id, ':image_path' => $imagePath]);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al actualizar imagen: " . $e->getMessage());
+    public function getAll($page = 1, $limit = 20, $categoryId = null) {
+        $offset = ($page - 1) * $limit;
+        
+        $whereClause = "WHERE q.deleted_at IS NULL";
+        $params = [];
+        
+        if ($categoryId) {
+            $whereClause .= " AND q.category_id = ?";
+            $params[] = $categoryId;
         }
+        
+        $sql = "SELECT q.*, c.name as category_name 
+                FROM questions q 
+                LEFT JOIN categories c ON q.category_id = c.id 
+                $whereClause 
+                ORDER BY q.id DESC 
+                LIMIT ? OFFSET ?";
+        
+        $params[] = $limit;
+        $params[] = $offset;
+        
+        return $this->db->fetchAll($sql, $params);
     }
     
-    public function getAll($page = 1, $limit = 10, $categoryId = null) {
-        try {
-            $offset = ($page - 1) * $limit;
-            $sql = "SELECT q.*, c.name as category_name 
-                    FROM questions q 
-                    LEFT JOIN categories c ON q.category_id = c.id 
-                    WHERE q.is_active = 1";
-            
-            $params = [];
-            
-            if ($categoryId) {
-                $sql .= " AND q.category_id = :category_id";
-                $params[':category_id'] = $categoryId;
-            }
-            
-            $sql .= " ORDER BY q.created_at DESC LIMIT :limit OFFSET :offset";
-            $params[':limit'] = $limit;
-            $params[':offset'] = $offset;
-            
-            return $this->db->fetchAll($sql, $params);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener preguntas: " . $e->getMessage());
+    public function getRandomQuestions($categoryId = null, $limit = 20) {
+        $whereClause = "WHERE q.deleted_at IS NULL";
+        $params = [];
+        
+        if ($categoryId) {
+            $whereClause .= " AND q.category_id = ?";
+            $params[] = $categoryId;
         }
-    }
-    
-    public function getRandomQuestions($limit = 20, $categoryId = null) {
-        try {
-            $sql = "SELECT q.*, c.name as category_name 
-                    FROM questions q 
-                    LEFT JOIN categories c ON q.category_id = c.id 
-                    WHERE q.is_active = 1";
-            
-            $params = [];
-            
-            if ($categoryId) {
-                $sql .= " AND q.category_id = :category_id";
-                $params[':category_id'] = $categoryId;
-            }
-            
-            $sql .= " ORDER BY RAND() LIMIT :limit";
-            $params[':limit'] = $limit;
-            
-            return $this->db->fetchAll($sql, $params);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener preguntas aleatorias: " . $e->getMessage());
-        }
+        
+        $sql = "SELECT q.*, c.name as category_name 
+                FROM questions q 
+                LEFT JOIN categories c ON q.category_id = c.id 
+                $whereClause 
+                ORDER BY RAND() 
+                LIMIT ?";
+        
+        $params[] = $limit;
+        
+        return $this->db->fetchAll($sql, $params);
     }
     
     public function count($categoryId = null) {
-        try {
-            $sql = "SELECT COUNT(*) as total FROM questions WHERE is_active = 1";
-            $params = [];
-            
-            if ($categoryId) {
-                $sql .= " AND category_id = :category_id";
-                $params[':category_id'] = $categoryId;
-            }
-            
-            $result = $this->db->fetch($sql, $params);
-            return $result['total'];
-        } catch (Exception $e) {
-            throw new Exception("Error al contar preguntas: " . $e->getMessage());
+        $whereClause = "WHERE deleted_at IS NULL";
+        $params = [];
+        
+        if ($categoryId) {
+            $whereClause .= " AND category_id = ?";
+            $params[] = $categoryId;
         }
+        
+        $sql = "SELECT COUNT(*) as total FROM questions $whereClause";
+        $result = $this->db->fetch($sql, $params);
+        return $result['total'];
     }
     
     public function delete($id) {
-        try {
-            $sql = "UPDATE questions SET is_active = 0 WHERE id = :id";
-            $this->db->query($sql, [':id' => $id]);
-            return true;
-        } catch (Exception $e) {
-            throw new Exception("Error al eliminar pregunta: " . $e->getMessage());
-        }
+        $sql = "UPDATE questions SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?";
+        return $this->db->query($sql, [$id]);
     }
     
     public function getByCategory($categoryId) {
-        try {
-            $sql = "SELECT * FROM questions WHERE category_id = :category_id AND is_active = 1";
-            return $this->db->fetchAll($sql, [':category_id' => $categoryId]);
-        } catch (Exception $e) {
-            throw new Exception("Error al obtener preguntas por categoría: " . $e->getMessage());
-        }
+        $sql = "SELECT * FROM questions WHERE category_id = ? AND deleted_at IS NULL ORDER BY id";
+        return $this->db->fetchAll($sql, [$categoryId]);
     }
     
     public function search($term) {
-        try {
-            $sql = "SELECT q.*, c.name as category_name 
-                    FROM questions q 
-                    LEFT JOIN categories c ON q.category_id = c.id 
-                    WHERE q.is_active = 1 
-                    AND (q.question_text LIKE :term OR q.option_a LIKE :term 
-                    OR q.option_b LIKE :term OR q.option_c LIKE :term)";
-            
-            $params = [':term' => '%' . $term . '%'];
-            return $this->db->fetchAll($sql, $params);
-        } catch (Exception $e) {
-            throw new Exception("Error al buscar preguntas: " . $e->getMessage());
+        $sql = "SELECT q.*, c.name as category_name 
+                FROM questions q 
+                LEFT JOIN categories c ON q.category_id = c.id 
+                WHERE (q.question_text LIKE ? OR q.answer1 LIKE ? OR q.answer2 LIKE ? OR q.answer3 LIKE ?) 
+                AND q.deleted_at IS NULL 
+                ORDER BY q.id DESC";
+        
+        $searchTerm = "%$term%";
+        $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
+        
+        return $this->db->fetchAll($sql, $params);
+    }
+    
+    public function getImagePath($nro) {
+        $imagePath = "assets/img/questions/i{$nro}.png";
+        $fullPath = __DIR__ . "/../../{$imagePath}";
+        
+        if (file_exists($fullPath)) {
+            return $imagePath;
         }
+        
+        return null;
+    }
+    
+    public function updateImagePath($id, $nro) {
+        $imagePath = "assets/img/questions/i{$nro}.png";
+        $sql = "UPDATE questions SET image_path = ? WHERE id = ?";
+        return $this->db->query($sql, [$imagePath, $id]);
     }
 }
 ?>
