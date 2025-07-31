@@ -26,8 +26,11 @@ function setupEventListeners() {
     // Navegación
     $('.nav-link').on('click', function(e) {
         e.preventDefault();
-        const target = $(this).attr('href').substring(1);
-        showSection(target);
+        const href = $(this).attr('href');
+        if (href && href !== '#') {
+            const target = href.substring(1);
+            showSection(target);
+        }
     });
 
     // Formularios
@@ -194,28 +197,39 @@ function updateUIForUnauthenticatedUser() {
 
 // Funciones de navegación
 function showSection(sectionName) {
+    if (!sectionName) {
+        sectionName = 'home';
+    }
+    
     $('section').hide();
-    $('#' + sectionName).show();
+    const targetSection = $('#' + sectionName);
     
-    // Actualizar navegación activa
-    $('.nav-link').removeClass('active');
-    $('[href="#' + sectionName + '"]').addClass('active');
-    
-    // Cargar contenido específico según la sección
-    switch(sectionName) {
-        case 'tests':
-            loadCategories();
-            break;
-        case 'history':
-            loadHistory();
-            break;
-        case 'admin':
-            if (currentUser && currentUser.role === 'admin') {
-                loadAdminDashboard();
-            } else {
-                showSection('home');
-            }
-            break;
+    if (targetSection.length > 0) {
+        targetSection.show();
+        
+        // Actualizar navegación activa
+        $('.nav-link').removeClass('active');
+        $('[href="#' + sectionName + '"]').addClass('active');
+        
+        // Cargar contenido específico según la sección
+        switch(sectionName) {
+            case 'tests':
+                loadCategories();
+                break;
+            case 'history':
+                loadHistory();
+                break;
+            case 'admin':
+                if (currentUser && currentUser.role === 'admin') {
+                    loadAdminDashboard();
+                } else {
+                    showSection('home');
+                }
+                break;
+        }
+    } else {
+        // Si la sección no existe, mostrar home
+        showSection('home');
     }
 }
 
