@@ -141,6 +141,16 @@ html {
     display: none !important;
 }
 
+/* Asegurar que el menú de usuario se muestre correctamente */
+#userMenu[style*="display: flex !important"] {
+    display: flex !important;
+}
+
+/* Asegurar que los botones de autenticación se muestren correctamente */
+#authButtons[style*="display: flex !important"] {
+    display: flex !important;
+}
+
 .dropdown-item {
     color: var(--text-light);
     padding: 10px 20px;

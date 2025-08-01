@@ -16,10 +16,21 @@ Swal.mixin({
 
 // Inicializar la aplicación
 $(document).ready(function() {
+    console.log('Inicializando aplicación...');
     setupEventListeners();
     checkAuthStatus();
     showSection('home');
     loadPublicStats();
+    
+    // Debug: Verificar estado de autenticación cada 5 segundos
+    setInterval(function() {
+        console.log('Estado actual:', {
+            currentUser: currentUser,
+            token: localStorage.getItem('token'),
+            userMenuVisible: $('#userMenu').is(':visible'),
+            authButtonsVisible: $('#authButtons').is(':visible')
+        });
+    }, 5000);
 });
 
 function setupEventListeners() {
@@ -128,34 +139,62 @@ function checkAuthStatus() {
 }
 
 function updateUIForLoggedInUser() {
-    $('.guest-only').hide();
-    $('.user-only').show();
-    $('.admin-only').toggle(currentUser.role === 'admin');
+    console.log('Actualizando UI para usuario logueado:', currentUser);
     
+    // Ocultar elementos de invitado
+    $('.guest-only').hide();
+    
+    // Mostrar elementos de usuario
+    $('.user-only').show();
+    
+    // Mostrar elementos de admin si corresponde
+    if (currentUser.role === 'admin') {
+        $('.admin-only').show();
+        console.log('Usuario es administrador');
+    } else {
+        $('.admin-only').hide();
+    }
+    
+    // Mostrar menú de usuario y ocultar botones de autenticación
     $('#userMenu').show();
+    $('#userMenu').css('display', 'flex !important');
     $('#authButtons').hide();
     
+    // Actualizar información del usuario
     $('#userName').text(currentUser.first_name + ' ' + currentUser.last_name);
     $('#userRole').text(currentUser.role === 'admin' ? 'Administrador' : 'Usuario');
     $('#userLives').text(currentUser.lives || 3);
     
     // Actualizar vidas en la sección de tests
     $('#currentLives').text(currentUser.lives || 3);
+    
+    console.log('UI actualizada correctamente');
 }
 
 function updateUIForGuest() {
+    console.log('Actualizando UI para invitado');
+    
+    // Mostrar elementos de invitado
     $('.guest-only').show();
+    
+    // Ocultar elementos de usuario y admin
     $('.user-only').hide();
     $('.admin-only').hide();
     
-    // Asegurar que el dropdown de usuario esté completamente oculto
+    // Ocultar menú de usuario y mostrar botones de autenticación
     $('#userMenu').hide();
-    $('#userMenu').css('display', 'none');
+    $('#userMenu').css('display', 'none !important');
     $('#authButtons').show();
+    $('#authButtons').css('display', 'flex !important');
     
     // Limpiar cualquier estado del dropdown
     $('.dropdown-menu').removeClass('show');
     $('.dropdown-toggle').removeClass('show');
+    
+    // Limpiar información del usuario
+    $('#userName').text('Usuario');
+    $('#userRole').text('Usuario');
+    $('#userLives').text('3');
     
     currentUser = null;
     
@@ -163,6 +202,8 @@ function updateUIForGuest() {
         clearInterval(lifeRegenerationTimer);
         lifeRegenerationTimer = null;
     }
+    
+    console.log('UI actualizada para invitado');
 }
 
 function showSection(sectionName) {
@@ -731,6 +772,8 @@ function loadHistory() {
 }
 
 function loadAdminDashboard() {
+    console.log('Cargando dashboard del administrador...');
+    
     // Mostrar loading
     $('#admin .card-body').addClass('loading');
     
@@ -742,17 +785,19 @@ function loadAdminDashboard() {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
         success: function(response) {
+            console.log('Respuesta de estadísticas:', response);
             if (response.success) {
                 const stats = response.data;
                 $('#adminTotalQuestions').text(stats.total_questions || 0);
-                $('#adminTotalUsers').text(stats.total_users || 0);
+                $('#adminTotalUsers').text(stats.unique_users || 0);
                 $('#adminTotalTests').text(stats.total_tests || 0);
-                $('#adminAverageScore').text((stats.average_score || 0) + '%');
+                $('#adminAverageScore').text((Math.round(stats.average_score || 0)) + '%');
             } else {
                 Swal.fire('Error', response.message || 'Error al cargar estadísticas', 'error');
             }
         },
         error: function(xhr) {
+            console.error('Error al cargar estadísticas:', xhr);
             const response = xhr.responseJSON;
             Swal.fire('Error', response?.message || 'Error al cargar el dashboard', 'error');
         },
@@ -761,12 +806,14 @@ function loadAdminDashboard() {
         }
     });
     
-    // Cargar preguntas y usuarios
+    // Cargar preguntas, usuarios y estadísticas
     loadAdminQuestions();
     loadAdminUsers();
+    loadAdminStats();
 }
 
 function loadAdminQuestions() {
+    console.log('Cargando preguntas del administrador...');
     const questionsContainer = $('#questionsContainer');
     questionsContainer.addClass('loading');
     
@@ -777,11 +824,12 @@ function loadAdminQuestions() {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
         success: function(response) {
+            console.log('Respuesta de preguntas:', response);
             if (response.success) {
                 questionsContainer.empty();
                 
-                if (response.data.questions && response.data.questions.length > 0) {
-                    response.data.questions.forEach(question => {
+                if (response.data && response.data.length > 0) {
+                    response.data.forEach(question => {
                         const questionCard = `
                             <div class="card mb-3 question-admin-card">
                                 <div class="card-body">
@@ -833,6 +881,7 @@ function loadAdminQuestions() {
             }
         },
         error: function(xhr) {
+            console.error('Error al cargar preguntas:', xhr);
             const response = xhr.responseJSON;
             Swal.fire('Error', response?.message || 'Error al cargar las preguntas', 'error');
             questionsContainer.html(`
@@ -850,6 +899,7 @@ function loadAdminQuestions() {
 }
 
 function loadAdminUsers() {
+    console.log('Cargando usuarios del administrador...');
     const usersContainer = $('#usersContainer');
     usersContainer.addClass('loading');
     
@@ -860,6 +910,7 @@ function loadAdminUsers() {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
         success: function(response) {
+            console.log('Respuesta de usuarios:', response);
             if (response.success) {
                 usersContainer.empty();
                 
@@ -908,6 +959,7 @@ function loadAdminUsers() {
             }
         },
         error: function(xhr) {
+            console.error('Error al cargar usuarios:', xhr);
             const response = xhr.responseJSON;
             Swal.fire('Error', response?.message || 'Error al cargar los usuarios', 'error');
             usersContainer.html(`
@@ -1004,6 +1056,66 @@ function addQuestion() {
         submitBtn.html(originalText);
         submitBtn.prop('disabled', false);
     }
+}
+
+function loadAdminStats() {
+    console.log('Cargando estadísticas detalladas del administrador...');
+    const statsContainer = $('#adminStatsContainer');
+    statsContainer.addClass('loading');
+    
+    $.ajax({
+        url: API_BASE_URL + 'admin/stats',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('Respuesta de estadísticas detalladas:', response);
+            if (response.success) {
+                const stats = response.data;
+                statsContainer.html(`
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Estadísticas de Tests</h6>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Total de tests:</strong> ${stats.total_tests || 0}</li>
+                                        <li><strong>Tests aprobados:</strong> ${stats.passed_tests || 0}</li>
+                                        <li><strong>Tests fallidos:</strong> ${stats.failed_tests || 0}</li>
+                                        <li><strong>Promedio de puntuación:</strong> ${Math.round(stats.average_score || 0)}%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Estadísticas por Dificultad</h6>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Tests fáciles:</strong> ${stats.easy_tests || 0}</li>
+                                        <li><strong>Tests medios:</strong> ${stats.medium_tests || 0}</li>
+                                        <li><strong>Tests difíciles:</strong> ${stats.hard_tests || 0}</li>
+                                        <li><strong>Usuarios únicos:</strong> ${stats.unique_users || 0}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            } else {
+                Swal.fire('Error', response.message || 'Error al cargar estadísticas', 'error');
+            }
+        },
+        error: function(xhr) {
+            console.error('Error al cargar estadísticas detalladas:', xhr);
+            const response = xhr.responseJSON;
+            Swal.fire('Error', response?.message || 'Error al cargar estadísticas', 'error');
+        },
+        complete: function() {
+            statsContainer.removeClass('loading');
+        }
+    });
 }
 
 // Event listeners para admin
@@ -1117,4 +1229,9 @@ $(document).on('click', '.edit-question-btn', function() {
         icon: 'info',
         confirmButtonText: 'Entendido'
     });
+});
+
+// Event listener para tabs del administrador
+$(document).on('click', '#stats-tab', function() {
+    loadAdminStats();
 });
