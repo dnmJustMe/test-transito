@@ -65,7 +65,7 @@
                 <!-- Menú de usuario -->
                 <div id="userMenu" class="d-flex align-items-center user-only" style="display: none;">
                     <div class="dropdown">
-                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle"></i> <span id="userName">Usuario</span>
                             <span class="badge bg-warning ms-1" id="userLives">3</span>
                         </button>
@@ -530,22 +530,33 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Iniciar Sesión</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-box-arrow-in-right text-primary"></i> Iniciar Sesión
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="loginForm">
                         <div class="mb-3">
-                            <label for="loginEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="loginEmail" required>
+                            <label for="loginEmail" class="form-label">
+                                <i class="bi bi-envelope text-info"></i> Email
+                            </label>
+                            <input type="email" class="form-control" id="loginEmail" required
+                                placeholder="tu@email.com">
                         </div>
                         <div class="mb-3">
-                            <label for="loginPassword" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" id="loginPassword" required>
+                            <label for="loginPassword" class="form-label">
+                                <i class="bi bi-lock text-warning"></i> Contraseña
+                            </label>
+                            <input type="password" class="form-control" id="loginPassword" required
+                                placeholder="Tu contraseña">
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> Cancelar
                             </button>
                         </div>
                     </form>
@@ -559,36 +570,56 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Registrarse</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-plus text-success"></i> Registrarse
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="registerForm">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="registerFirstName" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="registerFirstName" required>
+                                <label for="registerFirstName" class="form-label">
+                                    <i class="bi bi-person text-primary"></i> Nombre
+                                </label>
+                                <input type="text" class="form-control" id="registerFirstName" required
+                                    placeholder="Tu nombre">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="registerLastName" class="form-label">Apellido</label>
-                                <input type="text" class="form-control" id="registerLastName" required>
+                                <label for="registerLastName" class="form-label">
+                                    <i class="bi bi-person text-primary"></i> Apellido
+                                </label>
+                                <input type="text" class="form-control" id="registerLastName" required
+                                    placeholder="Tu apellido">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="registerUsername" class="form-label">Nombre de Usuario</label>
-                            <input type="text" class="form-control" id="registerUsername" required>
+                            <label for="registerUsername" class="form-label">
+                                <i class="bi bi-person-badge text-info"></i> Nombre de Usuario
+                            </label>
+                            <input type="text" class="form-control" id="registerUsername" required
+                                placeholder="usuario123">
                         </div>
                         <div class="mb-3">
-                            <label for="registerEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="registerEmail" required>
+                            <label for="registerEmail" class="form-label">
+                                <i class="bi bi-envelope text-info"></i> Email
+                            </label>
+                            <input type="email" class="form-control" id="registerEmail" required
+                                placeholder="tu@email.com">
                         </div>
                         <div class="mb-3">
-                            <label for="registerPassword" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" id="registerPassword" required>
+                            <label for="registerPassword" class="form-label">
+                                <i class="bi bi-lock text-warning"></i> Contraseña
+                            </label>
+                            <input type="password" class="form-control" id="registerPassword" required
+                                placeholder="Mínimo 6 caracteres">
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-success">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
                                 <i class="bi bi-person-plus"></i> Registrarse
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> Cancelar
                             </button>
                         </div>
                     </form>
@@ -602,58 +633,94 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Agregar Pregunta</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle text-primary"></i> Agregar Nueva Pregunta
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addQuestionForm">
                         <div class="mb-3">
-                            <label for="questionText" class="form-label">Pregunta</label>
-                            <textarea class="form-control" id="questionText" rows="3" required></textarea>
+                            <label for="questionText" class="form-label">
+                                <i class="bi bi-question-circle text-info"></i> Pregunta
+                            </label>
+                            <textarea class="form-control" id="questionText" rows="3" required 
+                                placeholder="Escribe aquí la pregunta..."></textarea>
                         </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Respuestas:</strong> Asegúrate de que las tres respuestas sean diferentes entre sí.
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="questionAnswer1" class="form-label">Respuesta 1</label>
-                                <input type="text" class="form-control" id="questionAnswer1" required>
+                                <label for="questionAnswer1" class="form-label">
+                                    <i class="bi bi-1-circle text-primary"></i> Respuesta 1
+                                </label>
+                                <input type="text" class="form-control" id="questionAnswer1" required
+                                    placeholder="Primera opción">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="questionAnswer2" class="form-label">Respuesta 2</label>
-                                <input type="text" class="form-control" id="questionAnswer2" required>
+                                <label for="questionAnswer2" class="form-label">
+                                    <i class="bi bi-2-circle text-warning"></i> Respuesta 2
+                                </label>
+                                <input type="text" class="form-control" id="questionAnswer2" required
+                                    placeholder="Segunda opción">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="questionAnswer3" class="form-label">Respuesta 3</label>
-                                <input type="text" class="form-control" id="questionAnswer3" required>
+                                <label for="questionAnswer3" class="form-label">
+                                    <i class="bi bi-3-circle text-danger"></i> Respuesta 3
+                                </label>
+                                <input type="text" class="form-control" id="questionAnswer3" required
+                                    placeholder="Tercera opción">
                             </div>
                         </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Respuesta Correcta</label>
-                                <div>
-                                    <div class="form-check form-check-inline">
+                                <label class="form-label">
+                                    <i class="bi bi-check-circle text-success"></i> Respuesta Correcta
+                                </label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
                                         <input class="form-check-input" type="radio" name="correctAnswer" id="correct1"
                                             value="1" required>
-                                        <label class="form-check-label" for="correct1">1</label>
+                                        <label class="form-check-label" for="correct1">
+                                            <span class="badge bg-primary">Opción 1</span>
+                                        </label>
                                     </div>
-                                    <div class="form-check form-check-inline">
+                                    <div class="form-check">
                                         <input class="form-check-input" type="radio" name="correctAnswer" id="correct2"
                                             value="2">
-                                        <label class="form-check-label" for="correct2">2</label>
+                                        <label class="form-check-label" for="correct2">
+                                            <span class="badge bg-warning text-dark">Opción 2</span>
+                                        </label>
                                     </div>
-                                    <div class="form-check form-check-inline">
+                                    <div class="form-check">
                                         <input class="form-check-input" type="radio" name="correctAnswer" id="correct3"
                                             value="3">
-                                        <label class="form-check-label" for="correct3">3</label>
+                                        <label class="form-check-label" for="correct3">
+                                            <span class="badge bg-danger">Opción 3</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="questionImage" class="form-label">Imagen (opcional)</label>
+                                <label for="questionImage" class="form-label">
+                                    <i class="bi bi-image text-info"></i> Imagen (opcional)
+                                </label>
                                 <input type="file" class="form-control" id="questionImage" accept="image/*">
+                                <small class="text-muted">Formatos: JPG, PNG, GIF. Máximo 2MB</small>
                             </div>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="bi bi-plus-circle"></i> Agregar Pregunta
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> Cancelar
                             </button>
                         </div>
                     </form>
@@ -666,6 +733,7 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="assets/js/logger.js"></script>
     <script src="assets/js/app.js"></script>
     <script src="assets/js/init.js"></script>
 

@@ -14,12 +14,170 @@ Swal.mixin({
     timerProgressBar: true
 });
 
+// Funciones globales de debug con logging completo
+window.debugAPI = function() {
+    if (window.appLogger) {
+        window.appLogger.log('DEBUG', 'debugAPI ejecutado', {
+            apiUrl: API_BASE_URL,
+            hasToken: !!localStorage.getItem('token'),
+            currentUser: currentUser
+        });
+    }
+    
+    console.log('=== DEBUG API ===');
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('Token:', localStorage.getItem('token'));
+    console.log('Current User:', currentUser);
+    
+    // Probar endpoint de preguntas
+    $.ajax({
+        url: API_BASE_URL + 'questions',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('✅ Questions API funciona:', response);
+            if (window.appLogger) {
+                window.appLogger.logAPI('questions', 'GET', { success: true, response: response });
+            }
+        },
+        error: function(xhr) {
+            console.error('❌ Questions API error:', xhr);
+            if (window.appLogger) {
+                window.appLogger.logAPI('questions', 'GET', { success: false, error: xhr.responseText });
+            }
+        }
+    });
+    
+    // Probar endpoint de usuarios admin
+    $.ajax({
+        url: API_BASE_URL + 'admin/users',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('✅ Admin Users API funciona:', response);
+            if (window.appLogger) {
+                window.appLogger.logAPI('admin/users', 'GET', { success: true, response: response });
+            }
+        },
+        error: function(xhr) {
+            console.error('❌ Admin Users API error:', xhr);
+            if (window.appLogger) {
+                window.appLogger.logAPI('admin/users', 'GET', { success: false, error: xhr.responseText });
+            }
+        }
+    });
+    
+    // Probar endpoint de estadísticas admin
+    $.ajax({
+        url: API_BASE_URL + 'admin/stats',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('✅ Admin Stats API funciona:', response);
+            if (window.appLogger) {
+                window.appLogger.logAPI('admin/stats', 'GET', { success: true, response: response });
+            }
+        },
+        error: function(xhr) {
+            console.error('❌ Admin Stats API error:', xhr);
+            if (window.appLogger) {
+                window.appLogger.logAPI('admin/stats', 'GET', { success: false, error: xhr.responseText });
+            }
+        }
+    });
+};
+
+// Función global para forzar actualización de UI
+window.forceUpdateUI = function() {
+    if (window.appLogger) {
+        window.appLogger.logUI('forceUpdateUI ejecutado', { currentUser: currentUser });
+    }
+    
+    console.log('=== FORZAR ACTUALIZACIÓN UI ===');
+    if (currentUser) {
+        updateUIForLoggedInUser();
+    } else {
+        updateUIForGuest();
+    }
+};
+
+// Función global para limpiar localStorage
+window.clearAuth = function() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('clearAuth ejecutado', { previousUser: currentUser });
+    }
+    
+    console.log('=== LIMPIAR AUTENTICACIÓN ===');
+    localStorage.removeItem('token');
+    currentUser = null;
+    updateUIForGuest();
+    showSection('home');
+};
+
+// Función global para logout con endpoint
+window.logoutWithAPI = function() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('logoutWithAPI ejecutado', { currentUser: currentUser });
+    }
+    
+    console.log('=== LOGOUT CON API ===');
+    
+    $.ajax({
+        url: API_BASE_URL + 'auth/logout',
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('✅ Logout exitoso:', response);
+            if (window.appLogger) {
+                window.appLogger.logAuth('logout exitoso', { response: response });
+            }
+            clearAuth();
+        },
+        error: function(xhr) {
+            console.error('❌ Error en logout:', xhr);
+            if (window.appLogger) {
+                window.appLogger.logAuth('logout error', { error: xhr.responseText });
+            }
+            // Aún así limpiar localmente
+            clearAuth();
+        }
+    });
+};
+
 // Inicializar la aplicación
 $(document).ready(function() {
+    console.log('Inicializando aplicación...');
+    console.log('API_BASE_URL:', API_BASE_URL);
+    
     setupEventListeners();
     checkAuthStatus();
     showSection('home');
     loadPublicStats();
+    
+    // Debug: Verificar estado de autenticación cada 5 segundos
+    setInterval(function() {
+        console.log('Estado actual:', {
+            currentUser: currentUser,
+            token: localStorage.getItem('token'),
+            userMenuVisible: $('#userMenu').is(':visible'),
+            authButtonsVisible: $('#authButtons').is(':visible'),
+            userMenuStyle: $('#userMenu').attr('style'),
+            authButtonsStyle: $('#authButtons').attr('style')
+        });
+    }, 5000);
+    
+    console.log('🔧 Funciones de debug disponibles:');
+    console.log('- debugAPI(): Probar endpoints de la API');
+    console.log('- forceUpdateUI(): Forzar actualización de la UI');
+    console.log('- clearAuth(): Limpiar autenticación');
 });
 
 function setupEventListeners() {
@@ -98,6 +256,10 @@ function showAddQuestionModal() {
 }
 
 function checkAuthStatus() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('checkAuthStatus iniciado', { hasToken: !!localStorage.getItem('token') });
+    }
+    
     const token = localStorage.getItem('token');
     if (token) {
         // Verificar token válido
@@ -108,48 +270,129 @@ function checkAuthStatus() {
                 'Authorization': 'Bearer ' + token
             },
             success: function(response) {
+                if (window.appLogger) {
+                    window.appLogger.logAuth('auth/profile success', { success: response.success, user: response.data });
+                }
+                
                 if (response.success) {
                     currentUser = response.data;
                     updateUIForLoggedInUser();
                     startLifeRegenerationTimer();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logAuth('auth/profile failed', { response: response });
+                    }
                     localStorage.removeItem('token');
                     updateUIForGuest();
                 }
             },
-            error: function() {
+            error: function(xhr) {
+                if (window.appLogger) {
+                    window.appLogger.logAuth('auth/profile error', { error: xhr.responseText });
+                }
                 localStorage.removeItem('token');
                 updateUIForGuest();
             }
         });
     } else {
+        if (window.appLogger) {
+            window.appLogger.logAuth('no token found', {});
+        }
         updateUIForGuest();
     }
 }
 
 function updateUIForLoggedInUser() {
+    console.log('Actualizando UI para usuario logueado:', currentUser);
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('updateUIForLoggedInUser iniciado', { currentUser: currentUser });
+    }
+    
+    // Ocultar elementos de invitado
     $('.guest-only').hide();
+    
+    // Mostrar elementos de usuario
     $('.user-only').show();
-    $('.admin-only').toggle(currentUser.role === 'admin');
     
+    // Mostrar elementos de admin si corresponde
+    if (currentUser.role === 'admin') {
+        $('.admin-only').show();
+        console.log('Usuario es administrador');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('usuario es administrador', { user: currentUser });
+        }
+    } else {
+        $('.admin-only').hide();
+    }
+    
+    // Mostrar menú de usuario y ocultar botones de autenticación
+    $('#userMenu').removeClass('force-hide').addClass('force-show');
     $('#userMenu').show();
-    $('#authButtons').hide();
+    $('#userMenu').removeAttr('style');
+    $('#userMenu').css('display', 'flex');
     
+    $('#authButtons').removeClass('force-show').addClass('force-hide');
+    $('#authButtons').hide();
+    $('#authButtons').css('display', 'none');
+    
+    // Actualizar información del usuario
     $('#userName').text(currentUser.first_name + ' ' + currentUser.last_name);
     $('#userRole').text(currentUser.role === 'admin' ? 'Administrador' : 'Usuario');
     $('#userLives').text(currentUser.lives || 3);
     
     // Actualizar vidas en la sección de tests
     $('#currentLives').text(currentUser.lives || 3);
+    
+    console.log('UI actualizada correctamente');
+    console.log('userMenu visible:', $('#userMenu').is(':visible'));
+    console.log('authButtons visible:', $('#authButtons').is(':visible'));
+    console.log('userMenu classes:', $('#userMenu').attr('class'));
+    console.log('authButtons classes:', $('#authButtons').attr('class'));
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('updateUIForLoggedInUser completado', {
+            userMenuVisible: $('#userMenu').is(':visible'),
+            authButtonsVisible: $('#authButtons').is(':visible'),
+            userRole: currentUser.role
+        });
+    }
 }
 
 function updateUIForGuest() {
+    console.log('Actualizando UI para invitado');
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('updateUIForGuest iniciado', { currentUser: currentUser });
+    }
+    
+    // Mostrar elementos de invitado
     $('.guest-only').show();
+    
+    // Ocultar elementos de usuario y admin
     $('.user-only').hide();
     $('.admin-only').hide();
     
+    // Ocultar secciones específicas que requieren autenticación
+    $('#tests, #profile, #history, #stats').hide();
+    
+    // Ocultar menú de usuario y mostrar botones de autenticación
+    $('#userMenu').removeClass('force-show').addClass('force-hide');
     $('#userMenu').hide();
+    $('#userMenu').css('display', 'none');
+    
+    $('#authButtons').removeClass('force-hide').addClass('force-show');
     $('#authButtons').show();
+    $('#authButtons').css('display', 'flex');
+    
+    // Limpiar cualquier estado del dropdown
+    $('.dropdown-menu').removeClass('show');
+    $('.dropdown-toggle').removeClass('show');
+    
+    // Limpiar información del usuario
+    $('#userName').text('Usuario');
+    $('#userRole').text('Usuario');
+    $('#userLives').text('3');
     
     currentUser = null;
     
@@ -157,11 +400,30 @@ function updateUIForGuest() {
         clearInterval(lifeRegenerationTimer);
         lifeRegenerationTimer = null;
     }
+    
+    console.log('UI actualizada para invitado');
+    console.log('userMenu visible:', $('#userMenu').is(':visible'));
+    console.log('authButtons visible:', $('#authButtons').is(':visible'));
+    console.log('userMenu classes:', $('#userMenu').attr('class'));
+    console.log('authButtons classes:', $('#authButtons').attr('class'));
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('updateUIForGuest completado', {
+            userMenuVisible: $('#userMenu').is(':visible'),
+            authButtonsVisible: $('#authButtons').is(':visible')
+        });
+    }
 }
 
 function showSection(sectionName) {
     if (!sectionName) {
         sectionName = 'home';
+    }
+    
+    console.log('Mostrando sección:', sectionName);
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('showSection', { sectionName: sectionName, currentUser: currentUser });
     }
     
     $('section').hide();
@@ -180,6 +442,9 @@ function showSection(sectionName) {
                 if (currentUser) {
                     loadUserLives();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a tests', { reason: 'no autenticado' });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para realizar tests', 'warning');
                 }
@@ -188,6 +453,9 @@ function showSection(sectionName) {
                 if (currentUser) {
                     loadHistory();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a history', { reason: 'no autenticado' });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tu historial', 'warning');
                 }
@@ -196,6 +464,9 @@ function showSection(sectionName) {
                 if (currentUser) {
                     loadProfile();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a profile', { reason: 'no autenticado' });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tu perfil', 'warning');
                 }
@@ -204,6 +475,9 @@ function showSection(sectionName) {
                 if (currentUser) {
                     loadUserStats();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a stats', { reason: 'no autenticado' });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tus estadísticas', 'warning');
                 }
@@ -212,6 +486,12 @@ function showSection(sectionName) {
                 if (currentUser && currentUser.role === 'admin') {
                     loadAdminDashboard();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a admin', { 
+                            reason: currentUser ? 'no es admin' : 'no autenticado',
+                            userRole: currentUser?.role 
+                        });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Denegado', 'Solo los administradores pueden acceder a esta sección', 'error');
                 }
@@ -303,10 +583,17 @@ function startLifeRegenerationTimer() {
 }
 
 function login() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('login iniciado', { email: $('#loginEmail').val() });
+    }
+    
     const email = $('#loginEmail').val();
     const password = $('#loginPassword').val();
     
     if (!email || !password) {
+        if (window.appLogger) {
+            window.appLogger.logAuth('login campos vacíos', { email: email });
+        }
         Swal.fire('Error', 'Por favor completa todos los campos', 'error');
         return;
     }
@@ -320,6 +607,10 @@ function login() {
             password: password
         }),
         success: function(response) {
+            if (window.appLogger) {
+                window.appLogger.logAuth('login response', { success: response.success, message: response.message });
+            }
+            
             if (response.success) {
                 localStorage.setItem('token', response.data.token);
                 currentUser = response.data.user;
@@ -331,13 +622,23 @@ function login() {
                 startLifeRegenerationTimer();
                 showSection('home');
                 
+                if (window.appLogger) {
+                    window.appLogger.logAuth('login exitoso', { user: currentUser });
+                }
+                
                 Swal.fire('¡Bienvenido!', 'Has iniciado sesión correctamente', 'success');
             } else {
+                if (window.appLogger) {
+                    window.appLogger.logAuth('login fallido', { message: response.message });
+                }
                 Swal.fire('Error', response.message || 'Error al iniciar sesión', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
+            if (window.appLogger) {
+                window.appLogger.logAuth('login error', { error: xhr.responseText, status: xhr.status });
+            }
             Swal.fire('Error', response?.message || 'Error al iniciar sesión', 'error');
         }
     });
@@ -386,10 +687,18 @@ function register() {
 }
 
 function logout() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('logout iniciado', { currentUser: currentUser });
+    }
+    
     localStorage.removeItem('token');
     currentUser = null;
     updateUIForGuest();
     showSection('home');
+    
+    if (window.appLogger) {
+        window.appLogger.logAuth('logout completado', {});
+    }
     
     Swal.fire('Sesión Cerrada', 'Has cerrado sesión correctamente', 'info');
 }
@@ -725,6 +1034,15 @@ function loadHistory() {
 }
 
 function loadAdminDashboard() {
+    console.log('Cargando dashboard del administrador...');
+    
+    if (window.appLogger) {
+        window.appLogger.logAdmin('loadAdminDashboard iniciado', {});
+    }
+    
+    // Mostrar loading
+    $('#admin .card-body').addClass('loading');
+    
     // Cargar estadísticas del admin
     $.ajax({
         url: API_BASE_URL + 'admin/stats',
@@ -733,25 +1051,73 @@ function loadAdminDashboard() {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
         success: function(response) {
+            console.log('Respuesta de estadísticas:', response);
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('admin/stats success', { response: response });
+            }
+            
             if (response.success) {
                 const stats = response.data;
                 $('#adminTotalQuestions').text(stats.total_questions || 0);
-                $('#adminTotalUsers').text(stats.total_users || 0);
+                $('#adminTotalUsers').text(stats.unique_users || 0);
                 $('#adminTotalTests').text(stats.total_tests || 0);
-                $('#adminAverageScore').text((stats.average_score || 0) + '%');
+                $('#adminAverageScore').text((Math.round(stats.average_score || 0)) + '%');
+                
+                if (window.appLogger) {
+                    window.appLogger.logAdmin('dashboard actualizado', { stats: stats });
+                }
+            } else {
+                if (window.appLogger) {
+                    window.appLogger.logAdmin('admin/stats error', { message: response.message });
+                }
+                Swal.fire('Error', response.message || 'Error al cargar estadísticas', 'error');
             }
         },
-        error: function() {
-            Swal.fire('Error', 'Error al cargar el dashboard', 'error');
+        error: function(xhr) {
+            console.error('Error al cargar estadísticas:', xhr);
+            const response = xhr.responseJSON;
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('admin/stats error', { 
+                    error: xhr.responseText, 
+                    status: xhr.status,
+                    response: response 
+                });
+            }
+            
+            Swal.fire('Error', response?.message || 'Error al cargar el dashboard', 'error');
+        },
+        complete: function() {
+            $('#admin .card-body').removeClass('loading');
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('loadAdminDashboard completado', {});
+            }
         }
     });
     
-    // Cargar preguntas
+    // Cargar preguntas, usuarios y estadísticas
     loadAdminQuestions();
     loadAdminUsers();
+    loadAdminStats();
 }
 
 function loadAdminQuestions() {
+    console.log('Cargando preguntas del administrador...');
+    const questionsContainer = $('#questionsContainer');
+    questionsContainer.addClass('loading');
+    
+    // Mostrar mensaje de carga
+    questionsContainer.html(`
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando preguntas...</p>
+        </div>
+    `);
+    
     $.ajax({
         url: API_BASE_URL + 'questions',
         method: 'GET',
@@ -759,49 +1125,103 @@ function loadAdminQuestions() {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
         success: function(response) {
+            console.log('Respuesta de preguntas:', response);
             if (response.success) {
-                const questionsContainer = $('#questionsContainer');
                 questionsContainer.empty();
                 
-                response.data.questions.forEach(question => {
-                    const questionCard = `
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">Pregunta #${question.id}</h6>
-                                <p class="card-text">${question.question_text}</p>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <small class="text-muted">Respuesta 1: ${question.answer1}</small>
+                if (response.data && response.data.length > 0) {
+                    response.data.forEach(question => {
+                        const questionCard = `
+                            <div class="card mb-3 question-admin-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="card-title">Pregunta #${question.id}</h6>
+                                            <p class="card-text">${question.question_text}</p>
+                                            <div class="row mt-2">
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Respuesta 1: ${question.answer1}</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Respuesta 2: ${question.answer2}</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Respuesta 3: ${question.answer3}</small>
+                                                </div>
+                                            </div>
+                                            <div class="mt-2">
+                                                <span class="badge bg-success">Correcta: ${question.correct_answer}</span>
+                                                ${question.image_path ? '<span class="badge bg-info ms-1">Con imagen</span>' : ''}
+                                            </div>
+                                        </div>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-sm btn-primary edit-question-btn" data-id="${question.id}" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger delete-question-btn" data-id="${question.id}" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <small class="text-muted">Respuesta 2: ${question.answer2}</small>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <small class="text-muted">Respuesta 3: ${question.answer3}</small>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <span class="badge bg-success">Correcta: ${question.correct_answer}</span>
-                                    ${question.image_path ? '<span class="badge bg-info ms-1">Con imagen</span>' : ''}
-                                </div>
-                                <div class="mt-2">
-                                    <button class="btn btn-sm btn-primary edit-question-btn" data-id="${question.id}">Editar</button>
-                                    <button class="btn btn-sm btn-danger delete-question-btn" data-id="${question.id}">Eliminar</button>
                                 </div>
                             </div>
+                        `;
+                        questionsContainer.append(questionCard);
+                    });
+                } else {
+                    questionsContainer.html(`
+                        <div class="empty-state">
+                            <i class="bi bi-question-circle"></i>
+                            <h5>No hay preguntas</h5>
+                            <p>Agrega la primera pregunta usando el botón de arriba</p>
                         </div>
-                    `;
-                    questionsContainer.append(questionCard);
-                });
+                    `);
+                }
+            } else {
+                Swal.fire('Error', response.message || 'Error al cargar las preguntas', 'error');
+                questionsContainer.html(`
+                    <div class="error-state">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <h5>Error al cargar preguntas</h5>
+                        <p>${response.message || 'No se pudieron cargar las preguntas'}</p>
+                    </div>
+                `);
             }
         },
-        error: function() {
-            Swal.fire('Error', 'Error al cargar las preguntas', 'error');
+        error: function(xhr) {
+            console.error('Error al cargar preguntas:', xhr);
+            const response = xhr.responseJSON;
+            Swal.fire('Error', response?.message || 'Error al cargar las preguntas', 'error');
+            questionsContainer.html(`
+                <div class="error-state">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <h5>Error al cargar preguntas</h5>
+                    <p>No se pudieron cargar las preguntas. Verifica tu conexión.</p>
+                    <button class="btn btn-primary mt-2" onclick="loadAdminQuestions()">Reintentar</button>
+                </div>
+            `);
+        },
+        complete: function() {
+            questionsContainer.removeClass('loading');
         }
     });
 }
 
 function loadAdminUsers() {
+    console.log('Cargando usuarios del administrador...');
+    const usersContainer = $('#usersContainer');
+    usersContainer.addClass('loading');
+    
+    // Mostrar mensaje de carga
+    usersContainer.html(`
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando usuarios...</p>
+        </div>
+    `);
+    
     $.ajax({
         url: API_BASE_URL + 'admin/users',
         method: 'GET',
@@ -809,50 +1229,148 @@ function loadAdminUsers() {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
         success: function(response) {
+            console.log('Respuesta de usuarios:', response);
             if (response.success) {
-                const usersContainer = $('#usersContainer');
                 usersContainer.empty();
                 
-                response.data.forEach(user => {
-                    const userCard = `
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">${user.first_name} ${user.last_name}</h6>
-                                <p class="card-text">
-                                    <small class="text-muted">${user.email}</small><br>
-                                    <span class="badge bg-${user.role === 'admin' ? 'danger' : 'primary'}">${user.role}</span>
-                                    <span class="badge bg-warning ms-1">Vidas: ${user.lives}</span>
-                                </p>
-                                <div class="mt-2">
-                                    <button class="btn btn-sm btn-success add-life-btn" data-id="${user.id}">+1 Vida</button>
-                                    <button class="btn btn-sm btn-warning add-life-btn" data-id="${user.id}" data-lives="2">+2 Vidas</button>
-                                    <button class="btn btn-sm btn-info add-life-btn" data-id="${user.id}" data-lives="3">+3 Vidas</button>
+                if (response.data && response.data.length > 0) {
+                    response.data.forEach(user => {
+                        const userCard = `
+                            <div class="card mb-3 user-admin-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="card-title">${user.first_name} ${user.last_name}</h6>
+                                            <p class="card-text">
+                                                <small class="text-muted">${user.email}</small><br>
+                                                <span class="badge bg-${user.role === 'admin' ? 'danger' : 'primary'}">${user.role}</span>
+                                                <span class="badge bg-warning ms-1">Vidas: ${user.lives || 0}</span>
+                                            </p>
+                                        </div>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-sm btn-success add-life-btn" data-id="${user.id}" data-lives="1" title="+1 Vida">
+                                                <i class="bi bi-heart-fill"></i> +1
+                                            </button>
+                                            <button class="btn btn-sm btn-warning add-life-btn" data-id="${user.id}" data-lives="2" title="+2 Vidas">
+                                                <i class="bi bi-heart-fill"></i> +2
+                                            </button>
+                                            <button class="btn btn-sm btn-info add-life-btn" data-id="${user.id}" data-lives="3" title="+3 Vidas">
+                                                <i class="bi bi-heart-fill"></i> +3
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        `;
+                        usersContainer.append(userCard);
+                    });
+                } else {
+                    usersContainer.html(`
+                        <div class="empty-state">
+                            <i class="bi bi-people"></i>
+                            <h5>No hay usuarios</h5>
+                            <p>No se encontraron usuarios registrados</p>
                         </div>
-                    `;
-                    usersContainer.append(userCard);
-                });
+                    `);
+                }
+            } else {
+                Swal.fire('Error', response.message || 'Error al cargar los usuarios', 'error');
+                usersContainer.html(`
+                    <div class="error-state">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <h5>Error al cargar usuarios</h5>
+                        <p>${response.message || 'No se pudieron cargar los usuarios'}</p>
+                    </div>
+                `);
             }
         },
-        error: function() {
-            Swal.fire('Error', 'Error al cargar los usuarios', 'error');
+        error: function(xhr) {
+            console.error('Error al cargar usuarios:', xhr);
+            const response = xhr.responseJSON;
+            Swal.fire('Error', response?.message || 'Error al cargar los usuarios', 'error');
+            usersContainer.html(`
+                <div class="error-state">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <h5>Error al cargar usuarios</h5>
+                    <p>No se pudieron cargar los usuarios. Verifica tu conexión.</p>
+                    <button class="btn btn-primary mt-2" onclick="loadAdminUsers()">Reintentar</button>
+                </div>
+            `);
+        },
+        complete: function() {
+            usersContainer.removeClass('loading');
         }
     });
 }
 
 function addQuestion() {
+    console.log('Agregando pregunta...');
+    
+    if (window.appLogger) {
+        window.appLogger.logAdmin('addQuestion iniciado', {});
+    }
+    
+    // Mostrar loading en el botón
+    const submitBtn = $('#addQuestionForm button[type="submit"]');
+    const originalText = submitBtn.html();
+    submitBtn.html('<i class="bi bi-hourglass-split"></i> Agregando...');
+    submitBtn.prop('disabled', true);
+    
     const formData = {
-        question_text: $('#questionText').val(),
-        answer1: $('#questionAnswer1').val(),
-        answer2: $('#questionAnswer2').val(),
-        answer3: $('#questionAnswer3').val(),
+        question_text: $('#questionText').val().trim(),
+        answer1: $('#questionAnswer1').val().trim(),
+        answer2: $('#questionAnswer2').val().trim(),
+        answer3: $('#questionAnswer3').val().trim(),
         correct_answer: parseInt($('input[name="correctAnswer"]:checked').val())
     };
     
-    // Validaciones
-    if (!formData.question_text || !formData.answer1 || !formData.answer2 || !formData.answer3 || !formData.correct_answer) {
-        Swal.fire('Error', 'Por favor completa todos los campos', 'error');
+    console.log('Datos del formulario:', formData);
+    
+    if (window.appLogger) {
+        window.appLogger.logAdmin('datos del formulario', { formData: formData });
+    }
+    
+    // Validaciones mejoradas
+    if (!formData.question_text) {
+        console.log('Error: Pregunta vacía');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('validación fallida', { error: 'pregunta vacía' });
+        }
+        Swal.fire('Error', 'La pregunta es obligatoria', 'error');
+        resetSubmitButton();
+        return;
+    }
+    
+    if (!formData.answer1 || !formData.answer2 || !formData.answer3) {
+        console.log('Error: Respuestas vacías');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('validación fallida', { error: 'respuestas vacías' });
+        }
+        Swal.fire('Error', 'Todas las respuestas son obligatorias', 'error');
+        resetSubmitButton();
+        return;
+    }
+    
+    if (!formData.correct_answer || formData.correct_answer < 1 || formData.correct_answer > 3) {
+        console.log('Error: Respuesta correcta no seleccionada');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('validación fallida', { error: 'respuesta correcta no seleccionada', correct_answer: formData.correct_answer });
+        }
+        Swal.fire('Error', 'Debes seleccionar una respuesta correcta', 'error');
+        resetSubmitButton();
+        return;
+    }
+    
+    // Verificar que las respuestas sean diferentes
+    const answers = [formData.answer1, formData.answer2, formData.answer3];
+    const uniqueAnswers = [...new Set(answers)];
+    if (uniqueAnswers.length !== 3) {
+        console.log('Error: Respuestas duplicadas');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('validación fallida', { error: 'respuestas duplicadas', answers: answers });
+        }
+        Swal.fire('Error', 'Las tres respuestas deben ser diferentes', 'error');
+        resetSubmitButton();
         return;
     }
     
@@ -865,18 +1383,144 @@ function addQuestion() {
         },
         data: JSON.stringify(formData),
         success: function(response) {
+            console.log('Respuesta de agregar pregunta:', response);
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('questions POST success', { response: response });
+            }
+            
             if (response.success) {
                 $('#addQuestionModal').modal('hide');
                 $('#addQuestionForm')[0].reset();
                 loadAdminQuestions();
-                Swal.fire('Éxito', 'Pregunta agregada correctamente', 'success');
+                
+                if (window.appLogger) {
+                    window.appLogger.logAdmin('pregunta agregada exitosamente', { formData: formData });
+                }
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Pregunta agregada!',
+                    text: 'La pregunta se ha agregado correctamente al sistema',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } else {
+                if (window.appLogger) {
+                    window.appLogger.logAdmin('questions POST error', { message: response.message });
+                }
                 Swal.fire('Error', response.message || 'Error al agregar pregunta', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
-            Swal.fire('Error', response?.message || 'Error al agregar pregunta', 'error');
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('questions POST error', { 
+                    error: xhr.responseText, 
+                    status: xhr.status,
+                    response: response 
+                });
+            }
+            
+            Swal.fire('Error', response?.message || 'Error al agregar pregunta. Verifica tu conexión.', 'error');
+        },
+        complete: function() {
+            resetSubmitButton();
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('addQuestion completado', {});
+            }
+        }
+    });
+    
+    function resetSubmitButton() {
+        submitBtn.html(originalText);
+        submitBtn.prop('disabled', false);
+    }
+}
+
+function loadAdminStats() {
+    console.log('Cargando estadísticas detalladas del administrador...');
+    const statsContainer = $('#adminStatsContainer');
+    statsContainer.addClass('loading');
+    
+    // Mostrar mensaje de carga
+    statsContainer.html(`
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando estadísticas...</p>
+        </div>
+    `);
+    
+    $.ajax({
+        url: API_BASE_URL + 'admin/stats',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('Respuesta de estadísticas detalladas:', response);
+            if (response.success) {
+                const stats = response.data;
+                statsContainer.html(`
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Estadísticas de Tests</h6>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Total de tests:</strong> ${stats.total_tests || 0}</li>
+                                        <li><strong>Tests aprobados:</strong> ${stats.passed_tests || 0}</li>
+                                        <li><strong>Tests fallidos:</strong> ${stats.failed_tests || 0}</li>
+                                        <li><strong>Promedio de puntuación:</strong> ${Math.round(stats.average_score || 0)}%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Estadísticas por Dificultad</h6>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Tests fáciles:</strong> ${stats.easy_tests || 0}</li>
+                                        <li><strong>Tests medios:</strong> ${stats.medium_tests || 0}</li>
+                                        <li><strong>Tests difíciles:</strong> ${stats.hard_tests || 0}</li>
+                                        <li><strong>Usuarios únicos:</strong> ${stats.unique_users || 0}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            } else {
+                Swal.fire('Error', response.message || 'Error al cargar estadísticas', 'error');
+                statsContainer.html(`
+                    <div class="error-state">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <h5>Error al cargar estadísticas</h5>
+                        <p>${response.message || 'No se pudieron cargar las estadísticas'}</p>
+                    </div>
+                `);
+            }
+        },
+        error: function(xhr) {
+            console.error('Error al cargar estadísticas detalladas:', xhr);
+            const response = xhr.responseJSON;
+            Swal.fire('Error', response?.message || 'Error al cargar estadísticas', 'error');
+            statsContainer.html(`
+                <div class="error-state">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <h5>Error al cargar estadísticas</h5>
+                    <p>No se pudieron cargar las estadísticas. Verifica tu conexión.</p>
+                    <button class="btn btn-primary mt-2" onclick="loadAdminStats()">Reintentar</button>
+                </div>
+            `);
+        },
+        complete: function() {
+            statsContainer.removeClass('loading');
         }
     });
 }
@@ -885,6 +1529,12 @@ function addQuestion() {
 $(document).on('click', '.add-life-btn', function() {
     const userId = $(this).data('id');
     const lives = $(this).data('lives') || 1;
+    const button = $(this);
+    
+    // Mostrar loading en el botón
+    const originalText = button.html();
+    button.html('<i class="bi bi-hourglass-split"></i>');
+    button.prop('disabled', true);
     
     $.ajax({
         url: API_BASE_URL + 'auth/add-lives',
@@ -900,32 +1550,49 @@ $(document).on('click', '.add-life-btn', function() {
         success: function(response) {
             if (response.success) {
                 loadAdminUsers();
-                Swal.fire('Éxito', 'Vidas agregadas correctamente', 'success');
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Vidas agregadas!',
+                    text: `Se agregaron ${lives} vida(s) al usuario`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } else {
                 Swal.fire('Error', response.message || 'Error al agregar vidas', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
-            Swal.fire('Error', response?.message || 'Error al agregar vidas', 'error');
+            Swal.fire('Error', response?.message || 'Error al agregar vidas. Verifica tu conexión.', 'error');
+        },
+        complete: function() {
+            button.html(originalText);
+            button.prop('disabled', false);
         }
     });
 });
 
 $(document).on('click', '.delete-question-btn', function() {
     const questionId = $(this).data('id');
+    const button = $(this);
     
     Swal.fire({
         title: '¿Estás seguro?',
-        text: 'Esta acción no se puede deshacer',
+        text: 'Esta acción no se puede deshacer y eliminará la pregunta permanentemente',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
         confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
     }).then((result) => {
         if (result.isConfirmed) {
+            // Mostrar loading en el botón
+            const originalText = button.html();
+            button.html('<i class="bi bi-hourglass-split"></i>');
+            button.prop('disabled', true);
+            
             $.ajax({
                 url: API_BASE_URL + 'questions/' + questionId,
                 method: 'DELETE',
@@ -935,16 +1602,43 @@ $(document).on('click', '.delete-question-btn', function() {
                 success: function(response) {
                     if (response.success) {
                         loadAdminQuestions();
-                        Swal.fire('Eliminado', 'Pregunta eliminada correctamente', 'success');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Pregunta eliminada!',
+                            text: 'La pregunta se ha eliminado correctamente',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
                     } else {
                         Swal.fire('Error', response.message || 'Error al eliminar pregunta', 'error');
                     }
                 },
                 error: function(xhr) {
                     const response = xhr.responseJSON;
-                    Swal.fire('Error', response?.message || 'Error al eliminar pregunta', 'error');
+                    Swal.fire('Error', response?.message || 'Error al eliminar pregunta. Verifica tu conexión.', 'error');
+                },
+                complete: function() {
+                    button.html(originalText);
+                    button.prop('disabled', false);
                 }
             });
         }
     });
+});
+
+// Event listener para editar preguntas
+$(document).on('click', '.edit-question-btn', function() {
+    const questionId = $(this).data('id');
+    
+    Swal.fire({
+        title: 'Función en desarrollo',
+        text: 'La edición de preguntas estará disponible próximamente',
+        icon: 'info',
+        confirmButtonText: 'Entendido'
+    });
+});
+
+// Event listener para tabs del administrador
+$(document).on('click', '#stats-tab', function() {
+    loadAdminStats();
 });

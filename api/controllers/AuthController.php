@@ -201,6 +201,28 @@ class AuthController {
         }
     }
     
+    public function logout() {
+        try {
+            // Obtener el token del header Authorization
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+            
+            if (strpos($authHeader, 'Bearer ') === 0) {
+                $token = substr($authHeader, 7);
+                
+                // Aquí podrías implementar una blacklist de tokens si es necesario
+                // Por ahora, simplemente retornamos éxito ya que el cliente eliminará el token
+                
+                return $this->sendResponse(true, 'Logout exitoso');
+            } else {
+                return $this->sendResponse(false, 'Token no proporcionado');
+            }
+            
+        } catch (Exception $e) {
+            return $this->sendResponse(false, 'Error: ' . $e->getMessage());
+        }
+    }
+    
     private function generateJWT($user) {
         $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
         $payload = json_encode([
