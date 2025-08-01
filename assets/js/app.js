@@ -17,6 +17,8 @@ Swal.mixin({
 // Inicializar la aplicación
 $(document).ready(function() {
     console.log('Inicializando aplicación...');
+    console.log('API_BASE_URL:', API_BASE_URL);
+    
     setupEventListeners();
     checkAuthStatus();
     showSection('home');
@@ -28,9 +30,88 @@ $(document).ready(function() {
             currentUser: currentUser,
             token: localStorage.getItem('token'),
             userMenuVisible: $('#userMenu').is(':visible'),
-            authButtonsVisible: $('#authButtons').is(':visible')
+            authButtonsVisible: $('#authButtons').is(':visible'),
+            userMenuStyle: $('#userMenu').attr('style'),
+            authButtonsStyle: $('#authButtons').attr('style')
         });
     }, 5000);
+    
+    // Función global para debug de API
+    window.debugAPI = function() {
+        console.log('=== DEBUG API ===');
+        console.log('API_BASE_URL:', API_BASE_URL);
+        console.log('Token:', localStorage.getItem('token'));
+        console.log('Current User:', currentUser);
+        
+        // Probar endpoint de preguntas
+        $.ajax({
+            url: API_BASE_URL + 'questions',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            success: function(response) {
+                console.log('✅ Questions API funciona:', response);
+            },
+            error: function(xhr) {
+                console.error('❌ Questions API error:', xhr);
+            }
+        });
+        
+        // Probar endpoint de usuarios admin
+        $.ajax({
+            url: API_BASE_URL + 'admin/users',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            success: function(response) {
+                console.log('✅ Admin Users API funciona:', response);
+            },
+            error: function(xhr) {
+                console.error('❌ Admin Users API error:', xhr);
+            }
+        });
+        
+        // Probar endpoint de estadísticas admin
+        $.ajax({
+            url: API_BASE_URL + 'admin/stats',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            success: function(response) {
+                console.log('✅ Admin Stats API funciona:', response);
+            },
+            error: function(xhr) {
+                console.error('❌ Admin Stats API error:', xhr);
+            }
+        });
+    };
+    
+    // Función global para forzar actualización de UI
+    window.forceUpdateUI = function() {
+        console.log('=== FORZAR ACTUALIZACIÓN UI ===');
+        if (currentUser) {
+            updateUIForLoggedInUser();
+        } else {
+            updateUIForGuest();
+        }
+    };
+    
+    // Función global para limpiar localStorage
+    window.clearAuth = function() {
+        console.log('=== LIMPIAR AUTENTICACIÓN ===');
+        localStorage.removeItem('token');
+        currentUser = null;
+        updateUIForGuest();
+        showSection('home');
+    };
+    
+    console.log('🔧 Funciones de debug disponibles:');
+    console.log('- debugAPI(): Probar endpoints de la API');
+    console.log('- forceUpdateUI(): Forzar actualización de la UI');
+    console.log('- clearAuth(): Limpiar autenticación');
 });
 
 function setupEventListeners() {
@@ -157,8 +238,10 @@ function updateUIForLoggedInUser() {
     
     // Mostrar menú de usuario y ocultar botones de autenticación
     $('#userMenu').show();
-    $('#userMenu').css('display', 'flex !important');
+    $('#userMenu').removeAttr('style');
+    $('#userMenu').css('display', 'flex');
     $('#authButtons').hide();
+    $('#authButtons').css('display', 'none');
     
     // Actualizar información del usuario
     $('#userName').text(currentUser.first_name + ' ' + currentUser.last_name);
@@ -169,6 +252,8 @@ function updateUIForLoggedInUser() {
     $('#currentLives').text(currentUser.lives || 3);
     
     console.log('UI actualizada correctamente');
+    console.log('userMenu visible:', $('#userMenu').is(':visible'));
+    console.log('authButtons visible:', $('#authButtons').is(':visible'));
 }
 
 function updateUIForGuest() {
@@ -183,9 +268,9 @@ function updateUIForGuest() {
     
     // Ocultar menú de usuario y mostrar botones de autenticación
     $('#userMenu').hide();
-    $('#userMenu').css('display', 'none !important');
+    $('#userMenu').css('display', 'none');
     $('#authButtons').show();
-    $('#authButtons').css('display', 'flex !important');
+    $('#authButtons').css('display', 'flex');
     
     // Limpiar cualquier estado del dropdown
     $('.dropdown-menu').removeClass('show');
@@ -204,6 +289,8 @@ function updateUIForGuest() {
     }
     
     console.log('UI actualizada para invitado');
+    console.log('userMenu visible:', $('#userMenu').is(':visible'));
+    console.log('authButtons visible:', $('#authButtons').is(':visible'));
 }
 
 function showSection(sectionName) {
@@ -817,6 +904,16 @@ function loadAdminQuestions() {
     const questionsContainer = $('#questionsContainer');
     questionsContainer.addClass('loading');
     
+    // Mostrar mensaje de carga
+    questionsContainer.html(`
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando preguntas...</p>
+        </div>
+    `);
+    
     $.ajax({
         url: API_BASE_URL + 'questions',
         method: 'GET',
@@ -878,6 +975,13 @@ function loadAdminQuestions() {
                 }
             } else {
                 Swal.fire('Error', response.message || 'Error al cargar las preguntas', 'error');
+                questionsContainer.html(`
+                    <div class="error-state">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <h5>Error al cargar preguntas</h5>
+                        <p>${response.message || 'No se pudieron cargar las preguntas'}</p>
+                    </div>
+                `);
             }
         },
         error: function(xhr) {
@@ -888,7 +992,8 @@ function loadAdminQuestions() {
                 <div class="error-state">
                     <i class="bi bi-exclamation-triangle"></i>
                     <h5>Error al cargar preguntas</h5>
-                    <p>No se pudieron cargar las preguntas. Intenta de nuevo.</p>
+                    <p>No se pudieron cargar las preguntas. Verifica tu conexión.</p>
+                    <button class="btn btn-primary mt-2" onclick="loadAdminQuestions()">Reintentar</button>
                 </div>
             `);
         },
@@ -902,6 +1007,16 @@ function loadAdminUsers() {
     console.log('Cargando usuarios del administrador...');
     const usersContainer = $('#usersContainer');
     usersContainer.addClass('loading');
+    
+    // Mostrar mensaje de carga
+    usersContainer.html(`
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando usuarios...</p>
+        </div>
+    `);
     
     $.ajax({
         url: API_BASE_URL + 'admin/users',
@@ -956,6 +1071,13 @@ function loadAdminUsers() {
                 }
             } else {
                 Swal.fire('Error', response.message || 'Error al cargar los usuarios', 'error');
+                usersContainer.html(`
+                    <div class="error-state">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <h5>Error al cargar usuarios</h5>
+                        <p>${response.message || 'No se pudieron cargar los usuarios'}</p>
+                    </div>
+                `);
             }
         },
         error: function(xhr) {
@@ -966,7 +1088,8 @@ function loadAdminUsers() {
                 <div class="error-state">
                     <i class="bi bi-exclamation-triangle"></i>
                     <h5>Error al cargar usuarios</h5>
-                    <p>No se pudieron cargar los usuarios. Intenta de nuevo.</p>
+                    <p>No se pudieron cargar los usuarios. Verifica tu conexión.</p>
+                    <button class="btn btn-primary mt-2" onclick="loadAdminUsers()">Reintentar</button>
                 </div>
             `);
         },
@@ -1063,6 +1186,16 @@ function loadAdminStats() {
     const statsContainer = $('#adminStatsContainer');
     statsContainer.addClass('loading');
     
+    // Mostrar mensaje de carga
+    statsContainer.html(`
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando estadísticas...</p>
+        </div>
+    `);
+    
     $.ajax({
         url: API_BASE_URL + 'admin/stats',
         method: 'GET',
@@ -1105,12 +1238,27 @@ function loadAdminStats() {
                 `);
             } else {
                 Swal.fire('Error', response.message || 'Error al cargar estadísticas', 'error');
+                statsContainer.html(`
+                    <div class="error-state">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <h5>Error al cargar estadísticas</h5>
+                        <p>${response.message || 'No se pudieron cargar las estadísticas'}</p>
+                    </div>
+                `);
             }
         },
         error: function(xhr) {
             console.error('Error al cargar estadísticas detalladas:', xhr);
             const response = xhr.responseJSON;
             Swal.fire('Error', response?.message || 'Error al cargar estadísticas', 'error');
+            statsContainer.html(`
+                <div class="error-state">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <h5>Error al cargar estadísticas</h5>
+                    <p>No se pudieron cargar las estadísticas. Verifica tu conexión.</p>
+                    <button class="btn btn-primary mt-2" onclick="loadAdminStats()">Reintentar</button>
+                </div>
+            `);
         },
         complete: function() {
             statsContainer.removeClass('loading');
