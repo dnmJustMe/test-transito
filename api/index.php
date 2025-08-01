@@ -81,6 +81,15 @@ try {
                     }
                     break;
                     
+                case 'logout':
+                    if ($requestMethod === 'POST') {
+                        $authController->logout();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode(['error' => 'Método no permitido']);
+                    }
+                    break;
+                    
                 default:
                     http_response_code(404);
                     echo json_encode(['error' => 'Endpoint no encontrado']);
@@ -270,15 +279,44 @@ try {
                 case 'users':
                     if ($requestMethod === 'GET') {
                         // Obtener todos los usuarios (solo admin)
-                        $user = $authController->getCurrentUser();
+                        $headers = getallheaders();
+                        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+                        
+                        if (!preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                            http_response_code(401);
+                            echo json_encode(['error' => 'Token no proporcionado']);
+                            exit;
+                        }
+                        
+                        $token = $matches[1];
+                        
+                        // Verificar JWT manualmente
+                        $parts = explode('.', $token);
+                        if (count($parts) !== 3) {
+                            http_response_code(401);
+                            echo json_encode(['error' => 'Token inválido']);
+                            exit;
+                        }
+                        
+                        $payload = base64_decode(str_replace(['-', '_'], ['+', '/'], $parts[1]));
+                        $payloadData = json_decode($payload, true);
+                        
+                        if ($payloadData['exp'] < time()) {
+                            http_response_code(401);
+                            echo json_encode(['error' => 'Token expirado']);
+                            exit;
+                        }
+                        
+                        require_once 'models/User.php';
+                        $userModel = new User();
+                        $user = $userModel->findById($payloadData['user_id']);
+                        
                         if (!$user || $user['role'] !== 'admin') {
                             http_response_code(401);
                             echo json_encode(['error' => 'No autorizado']);
                             exit;
                         }
                         
-                        require_once 'models/User.php';
-                        $userModel = new User();
                         $users = $userModel->getAll();
                         
                         echo json_encode([

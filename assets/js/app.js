@@ -320,9 +320,12 @@ function updateUIForLoggedInUser() {
     }
     
     // Mostrar menú de usuario y ocultar botones de autenticación
+    $('#userMenu').removeClass('force-hide').addClass('force-show');
     $('#userMenu').show();
     $('#userMenu').removeAttr('style');
     $('#userMenu').css('display', 'flex');
+    
+    $('#authButtons').removeClass('force-show').addClass('force-hide');
     $('#authButtons').hide();
     $('#authButtons').css('display', 'none');
     
@@ -337,6 +340,8 @@ function updateUIForLoggedInUser() {
     console.log('UI actualizada correctamente');
     console.log('userMenu visible:', $('#userMenu').is(':visible'));
     console.log('authButtons visible:', $('#authButtons').is(':visible'));
+    console.log('userMenu classes:', $('#userMenu').attr('class'));
+    console.log('authButtons classes:', $('#authButtons').attr('class'));
 }
 
 function updateUIForGuest() {
@@ -350,8 +355,11 @@ function updateUIForGuest() {
     $('.admin-only').hide();
     
     // Ocultar menú de usuario y mostrar botones de autenticación
+    $('#userMenu').removeClass('force-show').addClass('force-hide');
     $('#userMenu').hide();
     $('#userMenu').css('display', 'none');
+    
+    $('#authButtons').removeClass('force-hide').addClass('force-show');
     $('#authButtons').show();
     $('#authButtons').css('display', 'flex');
     
@@ -374,6 +382,8 @@ function updateUIForGuest() {
     console.log('UI actualizada para invitado');
     console.log('userMenu visible:', $('#userMenu').is(':visible'));
     console.log('authButtons visible:', $('#authButtons').is(':visible'));
+    console.log('userMenu classes:', $('#userMenu').attr('class'));
+    console.log('authButtons classes:', $('#authButtons').attr('class'));
 }
 
 function showSection(sectionName) {

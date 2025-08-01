@@ -151,6 +151,28 @@ html {
     display: flex !important;
 }
 
+/* Force display fixes */
+#userMenu.force-show {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#authButtons.force-hide {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+/* Override any conflicting styles */
+.navbar-nav .user-only {
+    display: flex !important;
+}
+
+.navbar-nav .guest-only {
+    display: flex !important;
+}
+
 .dropdown-item {
     color: var(--text-light);
     padding: 10px 20px;
