@@ -14,8 +14,16 @@ Swal.mixin({
     timerProgressBar: true
 });
 
-// Funciones globales de debug
+// Funciones globales de debug con logging completo
 window.debugAPI = function() {
+    if (window.appLogger) {
+        window.appLogger.log('DEBUG', 'debugAPI ejecutado', {
+            apiUrl: API_BASE_URL,
+            hasToken: !!localStorage.getItem('token'),
+            currentUser: currentUser
+        });
+    }
+    
     console.log('=== DEBUG API ===');
     console.log('API_BASE_URL:', API_BASE_URL);
     console.log('Token:', localStorage.getItem('token'));
@@ -30,9 +38,15 @@ window.debugAPI = function() {
         },
         success: function(response) {
             console.log('✅ Questions API funciona:', response);
+            if (window.appLogger) {
+                window.appLogger.logAPI('questions', 'GET', { success: true, response: response });
+            }
         },
         error: function(xhr) {
             console.error('❌ Questions API error:', xhr);
+            if (window.appLogger) {
+                window.appLogger.logAPI('questions', 'GET', { success: false, error: xhr.responseText });
+            }
         }
     });
     
@@ -45,9 +59,15 @@ window.debugAPI = function() {
         },
         success: function(response) {
             console.log('✅ Admin Users API funciona:', response);
+            if (window.appLogger) {
+                window.appLogger.logAPI('admin/users', 'GET', { success: true, response: response });
+            }
         },
         error: function(xhr) {
             console.error('❌ Admin Users API error:', xhr);
+            if (window.appLogger) {
+                window.appLogger.logAPI('admin/users', 'GET', { success: false, error: xhr.responseText });
+            }
         }
     });
     
@@ -60,15 +80,25 @@ window.debugAPI = function() {
         },
         success: function(response) {
             console.log('✅ Admin Stats API funciona:', response);
+            if (window.appLogger) {
+                window.appLogger.logAPI('admin/stats', 'GET', { success: true, response: response });
+            }
         },
         error: function(xhr) {
             console.error('❌ Admin Stats API error:', xhr);
+            if (window.appLogger) {
+                window.appLogger.logAPI('admin/stats', 'GET', { success: false, error: xhr.responseText });
+            }
         }
     });
 };
 
 // Función global para forzar actualización de UI
 window.forceUpdateUI = function() {
+    if (window.appLogger) {
+        window.appLogger.logUI('forceUpdateUI ejecutado', { currentUser: currentUser });
+    }
+    
     console.log('=== FORZAR ACTUALIZACIÓN UI ===');
     if (currentUser) {
         updateUIForLoggedInUser();
@@ -79,11 +109,47 @@ window.forceUpdateUI = function() {
 
 // Función global para limpiar localStorage
 window.clearAuth = function() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('clearAuth ejecutado', { previousUser: currentUser });
+    }
+    
     console.log('=== LIMPIAR AUTENTICACIÓN ===');
     localStorage.removeItem('token');
     currentUser = null;
     updateUIForGuest();
     showSection('home');
+};
+
+// Función global para logout con endpoint
+window.logoutWithAPI = function() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('logoutWithAPI ejecutado', { currentUser: currentUser });
+    }
+    
+    console.log('=== LOGOUT CON API ===');
+    
+    $.ajax({
+        url: API_BASE_URL + 'auth/logout',
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('✅ Logout exitoso:', response);
+            if (window.appLogger) {
+                window.appLogger.logAuth('logout exitoso', { response: response });
+            }
+            clearAuth();
+        },
+        error: function(xhr) {
+            console.error('❌ Error en logout:', xhr);
+            if (window.appLogger) {
+                window.appLogger.logAuth('logout error', { error: xhr.responseText });
+            }
+            // Aún así limpiar localmente
+            clearAuth();
+        }
+    });
 };
 
 // Inicializar la aplicación
@@ -190,6 +256,10 @@ function showAddQuestionModal() {
 }
 
 function checkAuthStatus() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('checkAuthStatus iniciado', { hasToken: !!localStorage.getItem('token') });
+    }
+    
     const token = localStorage.getItem('token');
     if (token) {
         // Verificar token válido
@@ -200,21 +270,34 @@ function checkAuthStatus() {
                 'Authorization': 'Bearer ' + token
             },
             success: function(response) {
+                if (window.appLogger) {
+                    window.appLogger.logAuth('auth/profile success', { success: response.success, user: response.data });
+                }
+                
                 if (response.success) {
                     currentUser = response.data;
                     updateUIForLoggedInUser();
                     startLifeRegenerationTimer();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logAuth('auth/profile failed', { response: response });
+                    }
                     localStorage.removeItem('token');
                     updateUIForGuest();
                 }
             },
-            error: function() {
+            error: function(xhr) {
+                if (window.appLogger) {
+                    window.appLogger.logAuth('auth/profile error', { error: xhr.responseText });
+                }
                 localStorage.removeItem('token');
                 updateUIForGuest();
             }
         });
     } else {
+        if (window.appLogger) {
+            window.appLogger.logAuth('no token found', {});
+        }
         updateUIForGuest();
     }
 }
@@ -437,10 +520,17 @@ function startLifeRegenerationTimer() {
 }
 
 function login() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('login iniciado', { email: $('#loginEmail').val() });
+    }
+    
     const email = $('#loginEmail').val();
     const password = $('#loginPassword').val();
     
     if (!email || !password) {
+        if (window.appLogger) {
+            window.appLogger.logAuth('login campos vacíos', { email: email });
+        }
         Swal.fire('Error', 'Por favor completa todos los campos', 'error');
         return;
     }
@@ -454,6 +544,10 @@ function login() {
             password: password
         }),
         success: function(response) {
+            if (window.appLogger) {
+                window.appLogger.logAuth('login response', { success: response.success, message: response.message });
+            }
+            
             if (response.success) {
                 localStorage.setItem('token', response.data.token);
                 currentUser = response.data.user;
@@ -465,13 +559,23 @@ function login() {
                 startLifeRegenerationTimer();
                 showSection('home');
                 
+                if (window.appLogger) {
+                    window.appLogger.logAuth('login exitoso', { user: currentUser });
+                }
+                
                 Swal.fire('¡Bienvenido!', 'Has iniciado sesión correctamente', 'success');
             } else {
+                if (window.appLogger) {
+                    window.appLogger.logAuth('login fallido', { message: response.message });
+                }
                 Swal.fire('Error', response.message || 'Error al iniciar sesión', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
+            if (window.appLogger) {
+                window.appLogger.logAuth('login error', { error: xhr.responseText, status: xhr.status });
+            }
             Swal.fire('Error', response?.message || 'Error al iniciar sesión', 'error');
         }
     });
@@ -520,10 +624,18 @@ function register() {
 }
 
 function logout() {
+    if (window.appLogger) {
+        window.appLogger.logAuth('logout iniciado', { currentUser: currentUser });
+    }
+    
     localStorage.removeItem('token');
     currentUser = null;
     updateUIForGuest();
     showSection('home');
+    
+    if (window.appLogger) {
+        window.appLogger.logAuth('logout completado', {});
+    }
     
     Swal.fire('Sesión Cerrada', 'Has cerrado sesión correctamente', 'info');
 }
