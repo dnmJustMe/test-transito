@@ -305,6 +305,10 @@ function checkAuthStatus() {
 function updateUIForLoggedInUser() {
     console.log('Actualizando UI para usuario logueado:', currentUser);
     
+    if (window.appLogger) {
+        window.appLogger.logUI('updateUIForLoggedInUser iniciado', { currentUser: currentUser });
+    }
+    
     // Ocultar elementos de invitado
     $('.guest-only').hide();
     
@@ -315,6 +319,9 @@ function updateUIForLoggedInUser() {
     if (currentUser.role === 'admin') {
         $('.admin-only').show();
         console.log('Usuario es administrador');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('usuario es administrador', { user: currentUser });
+        }
     } else {
         $('.admin-only').hide();
     }
@@ -342,10 +349,22 @@ function updateUIForLoggedInUser() {
     console.log('authButtons visible:', $('#authButtons').is(':visible'));
     console.log('userMenu classes:', $('#userMenu').attr('class'));
     console.log('authButtons classes:', $('#authButtons').attr('class'));
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('updateUIForLoggedInUser completado', {
+            userMenuVisible: $('#userMenu').is(':visible'),
+            authButtonsVisible: $('#authButtons').is(':visible'),
+            userRole: currentUser.role
+        });
+    }
 }
 
 function updateUIForGuest() {
     console.log('Actualizando UI para invitado');
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('updateUIForGuest iniciado', { currentUser: currentUser });
+    }
     
     // Mostrar elementos de invitado
     $('.guest-only').show();
@@ -353,6 +372,9 @@ function updateUIForGuest() {
     // Ocultar elementos de usuario y admin
     $('.user-only').hide();
     $('.admin-only').hide();
+    
+    // Ocultar secciones específicas que requieren autenticación
+    $('#tests, #profile, #history, #stats').hide();
     
     // Ocultar menú de usuario y mostrar botones de autenticación
     $('#userMenu').removeClass('force-show').addClass('force-hide');
@@ -384,11 +406,24 @@ function updateUIForGuest() {
     console.log('authButtons visible:', $('#authButtons').is(':visible'));
     console.log('userMenu classes:', $('#userMenu').attr('class'));
     console.log('authButtons classes:', $('#authButtons').attr('class'));
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('updateUIForGuest completado', {
+            userMenuVisible: $('#userMenu').is(':visible'),
+            authButtonsVisible: $('#authButtons').is(':visible')
+        });
+    }
 }
 
 function showSection(sectionName) {
     if (!sectionName) {
         sectionName = 'home';
+    }
+    
+    console.log('Mostrando sección:', sectionName);
+    
+    if (window.appLogger) {
+        window.appLogger.logUI('showSection', { sectionName: sectionName, currentUser: currentUser });
     }
     
     $('section').hide();
@@ -407,6 +442,9 @@ function showSection(sectionName) {
                 if (currentUser) {
                     loadUserLives();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a tests', { reason: 'no autenticado' });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para realizar tests', 'warning');
                 }
@@ -415,6 +453,9 @@ function showSection(sectionName) {
                 if (currentUser) {
                     loadHistory();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a history', { reason: 'no autenticado' });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tu historial', 'warning');
                 }
@@ -423,6 +464,9 @@ function showSection(sectionName) {
                 if (currentUser) {
                     loadProfile();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a profile', { reason: 'no autenticado' });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tu perfil', 'warning');
                 }
@@ -431,6 +475,9 @@ function showSection(sectionName) {
                 if (currentUser) {
                     loadUserStats();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a stats', { reason: 'no autenticado' });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Restringido', 'Debes iniciar sesión para ver tus estadísticas', 'warning');
                 }
@@ -439,6 +486,12 @@ function showSection(sectionName) {
                 if (currentUser && currentUser.role === 'admin') {
                     loadAdminDashboard();
                 } else {
+                    if (window.appLogger) {
+                        window.appLogger.logUI('acceso denegado a admin', { 
+                            reason: currentUser ? 'no es admin' : 'no autenticado',
+                            userRole: currentUser?.role 
+                        });
+                    }
                     showSection('home');
                     Swal.fire('Acceso Denegado', 'Solo los administradores pueden acceder a esta sección', 'error');
                 }
@@ -983,6 +1036,10 @@ function loadHistory() {
 function loadAdminDashboard() {
     console.log('Cargando dashboard del administrador...');
     
+    if (window.appLogger) {
+        window.appLogger.logAdmin('loadAdminDashboard iniciado', {});
+    }
+    
     // Mostrar loading
     $('#admin .card-body').addClass('loading');
     
@@ -995,23 +1052,48 @@ function loadAdminDashboard() {
         },
         success: function(response) {
             console.log('Respuesta de estadísticas:', response);
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('admin/stats success', { response: response });
+            }
+            
             if (response.success) {
                 const stats = response.data;
                 $('#adminTotalQuestions').text(stats.total_questions || 0);
                 $('#adminTotalUsers').text(stats.unique_users || 0);
                 $('#adminTotalTests').text(stats.total_tests || 0);
                 $('#adminAverageScore').text((Math.round(stats.average_score || 0)) + '%');
+                
+                if (window.appLogger) {
+                    window.appLogger.logAdmin('dashboard actualizado', { stats: stats });
+                }
             } else {
+                if (window.appLogger) {
+                    window.appLogger.logAdmin('admin/stats error', { message: response.message });
+                }
                 Swal.fire('Error', response.message || 'Error al cargar estadísticas', 'error');
             }
         },
         error: function(xhr) {
             console.error('Error al cargar estadísticas:', xhr);
             const response = xhr.responseJSON;
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('admin/stats error', { 
+                    error: xhr.responseText, 
+                    status: xhr.status,
+                    response: response 
+                });
+            }
+            
             Swal.fire('Error', response?.message || 'Error al cargar el dashboard', 'error');
         },
         complete: function() {
             $('#admin .card-body').removeClass('loading');
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('loadAdminDashboard completado', {});
+            }
         }
     });
     
@@ -1222,6 +1304,12 @@ function loadAdminUsers() {
 }
 
 function addQuestion() {
+    console.log('Agregando pregunta...');
+    
+    if (window.appLogger) {
+        window.appLogger.logAdmin('addQuestion iniciado', {});
+    }
+    
     // Mostrar loading en el botón
     const submitBtn = $('#addQuestionForm button[type="submit"]');
     const originalText = submitBtn.html();
@@ -1236,20 +1324,38 @@ function addQuestion() {
         correct_answer: parseInt($('input[name="correctAnswer"]:checked').val())
     };
     
+    console.log('Datos del formulario:', formData);
+    
+    if (window.appLogger) {
+        window.appLogger.logAdmin('datos del formulario', { formData: formData });
+    }
+    
     // Validaciones mejoradas
     if (!formData.question_text) {
+        console.log('Error: Pregunta vacía');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('validación fallida', { error: 'pregunta vacía' });
+        }
         Swal.fire('Error', 'La pregunta es obligatoria', 'error');
         resetSubmitButton();
         return;
     }
     
     if (!formData.answer1 || !formData.answer2 || !formData.answer3) {
+        console.log('Error: Respuestas vacías');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('validación fallida', { error: 'respuestas vacías' });
+        }
         Swal.fire('Error', 'Todas las respuestas son obligatorias', 'error');
         resetSubmitButton();
         return;
     }
     
     if (!formData.correct_answer || formData.correct_answer < 1 || formData.correct_answer > 3) {
+        console.log('Error: Respuesta correcta no seleccionada');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('validación fallida', { error: 'respuesta correcta no seleccionada', correct_answer: formData.correct_answer });
+        }
         Swal.fire('Error', 'Debes seleccionar una respuesta correcta', 'error');
         resetSubmitButton();
         return;
@@ -1259,6 +1365,10 @@ function addQuestion() {
     const answers = [formData.answer1, formData.answer2, formData.answer3];
     const uniqueAnswers = [...new Set(answers)];
     if (uniqueAnswers.length !== 3) {
+        console.log('Error: Respuestas duplicadas');
+        if (window.appLogger) {
+            window.appLogger.logAdmin('validación fallida', { error: 'respuestas duplicadas', answers: answers });
+        }
         Swal.fire('Error', 'Las tres respuestas deben ser diferentes', 'error');
         resetSubmitButton();
         return;
@@ -1273,10 +1383,21 @@ function addQuestion() {
         },
         data: JSON.stringify(formData),
         success: function(response) {
+            console.log('Respuesta de agregar pregunta:', response);
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('questions POST success', { response: response });
+            }
+            
             if (response.success) {
                 $('#addQuestionModal').modal('hide');
                 $('#addQuestionForm')[0].reset();
                 loadAdminQuestions();
+                
+                if (window.appLogger) {
+                    window.appLogger.logAdmin('pregunta agregada exitosamente', { formData: formData });
+                }
+                
                 Swal.fire({
                     icon: 'success',
                     title: '¡Pregunta agregada!',
@@ -1285,15 +1406,31 @@ function addQuestion() {
                     showConfirmButton: false
                 });
             } else {
+                if (window.appLogger) {
+                    window.appLogger.logAdmin('questions POST error', { message: response.message });
+                }
                 Swal.fire('Error', response.message || 'Error al agregar pregunta', 'error');
             }
         },
         error: function(xhr) {
             const response = xhr.responseJSON;
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('questions POST error', { 
+                    error: xhr.responseText, 
+                    status: xhr.status,
+                    response: response 
+                });
+            }
+            
             Swal.fire('Error', response?.message || 'Error al agregar pregunta. Verifica tu conexión.', 'error');
         },
         complete: function() {
             resetSubmitButton();
+            
+            if (window.appLogger) {
+                window.appLogger.logAdmin('addQuestion completado', {});
+            }
         }
     });
     

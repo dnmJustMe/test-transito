@@ -74,7 +74,26 @@ class AppLogger {
                 loggerDiv.style.display = loggerDiv.style.display === 'none' ? 'block' : 'none';
             };
             
+            const clearBtn = document.createElement('button');
+            clearBtn.textContent = '🗑️ LIMPIAR';
+            clearBtn.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 520px;
+                z-index: 10000;
+                padding: 5px 10px;
+                background: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            `;
+            clearBtn.onclick = () => {
+                this.clearLogs();
+            };
+            
             document.body.appendChild(toggleBtn);
+            document.body.appendChild(clearBtn);
             document.body.appendChild(loggerDiv);
         }
     }
