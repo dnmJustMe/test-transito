@@ -14,6 +14,78 @@ Swal.mixin({
     timerProgressBar: true
 });
 
+// Funciones globales de debug
+window.debugAPI = function() {
+    console.log('=== DEBUG API ===');
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('Token:', localStorage.getItem('token'));
+    console.log('Current User:', currentUser);
+    
+    // Probar endpoint de preguntas
+    $.ajax({
+        url: API_BASE_URL + 'questions',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('✅ Questions API funciona:', response);
+        },
+        error: function(xhr) {
+            console.error('❌ Questions API error:', xhr);
+        }
+    });
+    
+    // Probar endpoint de usuarios admin
+    $.ajax({
+        url: API_BASE_URL + 'admin/users',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('✅ Admin Users API funciona:', response);
+        },
+        error: function(xhr) {
+            console.error('❌ Admin Users API error:', xhr);
+        }
+    });
+    
+    // Probar endpoint de estadísticas admin
+    $.ajax({
+        url: API_BASE_URL + 'admin/stats',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+            console.log('✅ Admin Stats API funciona:', response);
+        },
+        error: function(xhr) {
+            console.error('❌ Admin Stats API error:', xhr);
+        }
+    });
+};
+
+// Función global para forzar actualización de UI
+window.forceUpdateUI = function() {
+    console.log('=== FORZAR ACTUALIZACIÓN UI ===');
+    if (currentUser) {
+        updateUIForLoggedInUser();
+    } else {
+        updateUIForGuest();
+    }
+};
+
+// Función global para limpiar localStorage
+window.clearAuth = function() {
+    console.log('=== LIMPIAR AUTENTICACIÓN ===');
+    localStorage.removeItem('token');
+    currentUser = null;
+    updateUIForGuest();
+    showSection('home');
+};
+
 // Inicializar la aplicación
 $(document).ready(function() {
     console.log('Inicializando aplicación...');
@@ -35,78 +107,6 @@ $(document).ready(function() {
             authButtonsStyle: $('#authButtons').attr('style')
         });
     }, 5000);
-    
-    // Función global para debug de API
-    window.debugAPI = function() {
-        console.log('=== DEBUG API ===');
-        console.log('API_BASE_URL:', API_BASE_URL);
-        console.log('Token:', localStorage.getItem('token'));
-        console.log('Current User:', currentUser);
-        
-        // Probar endpoint de preguntas
-        $.ajax({
-            url: API_BASE_URL + 'questions',
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-            },
-            success: function(response) {
-                console.log('✅ Questions API funciona:', response);
-            },
-            error: function(xhr) {
-                console.error('❌ Questions API error:', xhr);
-            }
-        });
-        
-        // Probar endpoint de usuarios admin
-        $.ajax({
-            url: API_BASE_URL + 'admin/users',
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-            },
-            success: function(response) {
-                console.log('✅ Admin Users API funciona:', response);
-            },
-            error: function(xhr) {
-                console.error('❌ Admin Users API error:', xhr);
-            }
-        });
-        
-        // Probar endpoint de estadísticas admin
-        $.ajax({
-            url: API_BASE_URL + 'admin/stats',
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-            },
-            success: function(response) {
-                console.log('✅ Admin Stats API funciona:', response);
-            },
-            error: function(xhr) {
-                console.error('❌ Admin Stats API error:', xhr);
-            }
-        });
-    };
-    
-    // Función global para forzar actualización de UI
-    window.forceUpdateUI = function() {
-        console.log('=== FORZAR ACTUALIZACIÓN UI ===');
-        if (currentUser) {
-            updateUIForLoggedInUser();
-        } else {
-            updateUIForGuest();
-        }
-    };
-    
-    // Función global para limpiar localStorage
-    window.clearAuth = function() {
-        console.log('=== LIMPIAR AUTENTICACIÓN ===');
-        localStorage.removeItem('token');
-        currentUser = null;
-        updateUIForGuest();
-        showSection('home');
-    };
     
     console.log('🔧 Funciones de debug disponibles:');
     console.log('- debugAPI(): Probar endpoints de la API');
